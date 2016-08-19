@@ -1,0 +1,27 @@
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\GameBoyMono.exe
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\GameBoyMono.pdb
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\MonoGame.Framework.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.MediaFoundation.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.XAudio2.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.DXGI.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.Direct3D11.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.Direct2D1.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.XInput.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.RawInput.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.Direct3D9.dll
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\MonoGame.Framework.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.MediaFoundation.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.XAudio2.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.DXGI.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.Direct3D11.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.Direct2D1.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.XInput.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.RawInput.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin\Windows\x86\Debug\SharpDX.Direct3D9.xml
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.csprojResolveAssemblyReference.cache
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.exe
+C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.pdb
+C:\Users\Patri\Source\Repos\GameBoyMono\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.exe
+C:\Users\Patri\Source\Repos\GameBoyMono\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.pdb
