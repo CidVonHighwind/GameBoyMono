@@ -68,11 +68,7 @@ namespace GameBoyMono
         public void Start()
         {
             // entry point 0100-0103
-
-            reg_A = 0x00;
-            CB_RES_1_A();
-
-            SUB_B();
+            reg_PC = 0x100;
 
             Action[] opas = { NOP, LD_BC_d16, LD_aBC_A, INC_BC, INC_B, DEC_B, LD_B_d8, RLCA, LD_a16_SP, ADD_HL_BC, LD_A_aBC, DEC_BC, INC_C, DEC_C, LD_C_d8, RRCA };
             opas[0x00]();
