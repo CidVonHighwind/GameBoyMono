@@ -23,3 +23,5 @@ C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\bin
 C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.csprojResolveAssemblyReference.cache
 C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.exe
 C:\Users\Patri\documents\visual studio 2015\Projects\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.pdb
+C:\Users\Patri\Source\Repos\GameBoyMono\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.exe
+C:\Users\Patri\Source\Repos\GameBoyMono\GameBoyMono\GameBoyMono\obj\x86\Debug\GameBoyMono.pdb
