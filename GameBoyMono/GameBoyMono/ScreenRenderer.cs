@@ -17,16 +17,6 @@ namespace GameBoyMono
         {
             LoadTexture(out sprTileData0, 0);
             LoadTexture(out sprTileData1, 1);
-
-            int b0 = 0x8000;
-            int b1 = 0x8FFF;
-            int b2 = (b1 - b0 + 1) / 16;
-
-            int b10 = 0x8800;
-            int b11 = 0x97FF;
-            int b12 = (b11 - b10 + 1) / 16;
-
-            int b3 = 0;
         }
 
         public void Draw(SpriteBatch spriteBatch)
@@ -51,10 +41,38 @@ namespace GameBoyMono
                 int data = (sbyte)Game1.gbCPU.generalMemory[i] + 128;
                 if (LCDC_Bit4)
                     data = Game1.gbCPU.generalMemory[i];
-                
+
                 int posX = (i - 0x9800) % 32;
                 int posY = (i - 0x9800) / 32;
                 spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(posX * 8, posY * 8, 8, 8), new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
+            }
+
+            // draw the sprites
+            for (int i = 0xFE00; i < 0xFE9F; i += 4)
+            {
+                // Byte0-2:
+                byte posY = Game1.gbCPU.generalMemory[i];
+                byte posX = Game1.gbCPU.generalMemory[i + 1];
+                byte tileNumber = Game1.gbCPU.generalMemory[i + 2];
+                byte attributes = Game1.gbCPU.generalMemory[i + 3];
+                // Byte3:
+                // Bit7   OBJ-to-BG Priority (0=OBJ Above BG, 1=OBJ Behind BG color 1-3)
+                // (Used for both BG and Window. BG color 0 is always behind OBJ)
+                // Bit6   Y flip          (0=Normal, 1=Vertically mirrored)
+                // Bit5   X flip          (0=Normal, 1=Horizontally mirrored)
+                // Bit4   Palette number  **Non CGB Mode Only** (0=OBP0, 1=OBP1)
+                // Bit3   Tile VRAM-Bank  **CGB Mode Only**     (0=Bank 0, 1=Bank 1)
+                // Bit2-0 Palette number  **CGB Mode Only**     (OBP0-7)
+
+                SpriteEffects sprEffect = SpriteEffects.None;
+                if ((attributes & 0x40) == 0x40)
+                    sprEffect = SpriteEffects.FlipVertically;
+                if ((attributes & 0x20) == 0x20)
+                    sprEffect = SpriteEffects.FlipHorizontally;
+
+                // draw the tile
+                spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16, 8, 8), new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8), 
+                    Color.White, 0, Vector2.Zero, sprEffect, 0);
             }
 
             // draw the screenPosition
@@ -88,7 +106,7 @@ namespace GameBoyMono
                         for (int x = 0; x < 8; x++)
                         {
                             int i = ix + iy * tilesX;
-                            int startAddress = bank == 0 ? 0x8000 : 0x8800; 
+                            int startAddress = bank == 0 ? 0x8000 : 0x8800;
 
                             // get the color data
                             int data = ((Game1.gbCPU.generalMemory[startAddress + (i * 16) + (y * 2)] >> (7 - x)) & 0x01) |

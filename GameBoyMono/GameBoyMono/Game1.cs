@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.IO;
+using System.Threading;
 
 namespace GameBoyMono
 {
@@ -9,6 +10,8 @@ namespace GameBoyMono
     {
         public static GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+
+        SpriteFont font0;
 
         public static string[] parameter;
 
@@ -22,6 +25,10 @@ namespace GameBoyMono
         public static Texture2D sprWhite;
 
         ScreenRenderer gbRenderer = new ScreenRenderer();
+
+        Thread gbTimer;
+        float time;
+        Timer systemTimer;
 
         public Game1()
         {
@@ -44,10 +51,15 @@ namespace GameBoyMono
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            gbTimer = new Thread(GameBoyTimer);
+            gbTimer.Start();
+
             //LoadRom(parameter[0]);
             LoadRamDump(parameter[0]);
 
             gbCPU.Start();
+
+            font0 = Content.Load<SpriteFont>("font0");
 
             sprWhite = new Texture2D(graphics.GraphicsDevice, 1, 1);
             sprWhite.SetData(new Color[] { Color.White });
@@ -77,9 +89,21 @@ namespace GameBoyMono
 
             gbRenderer.Draw(spriteBatch);
 
+            spriteBatch.DrawString(font0, "" + time, new Vector2(0, 0), Color.Red);
+
             spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        void GameBoyTimer()
+        {
+            while (true)
+            {
+                time++;
+                if (time == 10000000)
+                    time = 0;
+            }
         }
 
         void LoadRom(string path)
