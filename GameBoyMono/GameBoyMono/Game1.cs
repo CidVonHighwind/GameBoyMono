@@ -7,7 +7,7 @@ namespace GameBoyMono
 {
     public class Game1 : Game
     {
-        GraphicsDeviceManager graphics;
+        public static GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
 
         public static string[] parameter;
@@ -17,12 +17,18 @@ namespace GameBoyMono
         byte romSize;
         byte ramSize;
         byte destinationCode;
-        
-        GameBoyCPU gbCPU = new GameBoyCPU();
+
+        public static GameBoyCPU gbCPU = new GameBoyCPU();
+        public static Texture2D sprWhite;
+
+        ScreenRenderer gbRenderer = new ScreenRenderer();
 
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
+            graphics.PreferredBackBufferWidth = 1200;
+            graphics.PreferredBackBufferHeight = 800;
+            graphics.ApplyChanges();
             Content.RootDirectory = "Content";
         }
         protected override void Initialize()
@@ -38,9 +44,15 @@ namespace GameBoyMono
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            LoadRom(parameter[0]);
+            //LoadRom(parameter[0]);
+            LoadRamDump(parameter[0]);
 
             gbCPU.Start();
+
+            sprWhite = new Texture2D(graphics.GraphicsDevice, 1, 1);
+            sprWhite.SetData(new Color[] { Color.White });
+
+            gbRenderer.Load(Content);
         }
 
 
@@ -53,7 +65,6 @@ namespace GameBoyMono
         protected override void Update(GameTime gameTime)
         {
 
-
             base.Update(gameTime);
         }
 
@@ -62,9 +73,9 @@ namespace GameBoyMono
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            spriteBatch.Begin();
+            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
 
-
+            gbRenderer.Draw(spriteBatch);
 
             spriteBatch.End();
 
@@ -96,6 +107,22 @@ namespace GameBoyMono
             romSize = gbCPU.generalMemory[0x0148];
             ramSize = gbCPU.generalMemory[0x0149];
             destinationCode = gbCPU.generalMemory[0x014A];
+        }
+
+        void LoadRamDump(string path)
+        {
+            using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read))
+            {
+                using (BinaryReader romReader = new BinaryReader(fileStream))
+                {
+                    // load the first junk into the general memory
+                    int i = 0;
+                    while (i < romReader.BaseStream.Length)
+                    {
+                        gbCPU.generalMemory[i++] = romReader.ReadByte();
+                    }
+                }
+            }
         }
     }
 }

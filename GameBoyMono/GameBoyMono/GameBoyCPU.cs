@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace GameBoyMono
 {
-    partial class GameBoyCPU
+    public partial class GameBoyCPU
     {
         public byte[] generalMemory = new byte[65536];
          

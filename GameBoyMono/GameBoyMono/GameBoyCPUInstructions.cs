@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GameBoyMono
 {
-    partial class GameBoyCPU
+    public partial class GameBoyCPU
     {
         // controll
         public void NOP() { }
