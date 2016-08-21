@@ -89,7 +89,7 @@ namespace GameBoyMono
 
             gbRenderer.Draw(spriteBatch);
 
-            spriteBatch.DrawString(font0, "" + time, new Vector2(0, 0), Color.Red);
+            //spriteBatch.DrawString(font0, "" + time, new Vector2(0, 0), Color.Red);
 
             spriteBatch.End();
 
@@ -98,12 +98,12 @@ namespace GameBoyMono
 
         void GameBoyTimer()
         {
-            while (true)
-            {
-                time++;
-                if (time == 10000000)
-                    time = 0;
-            }
+            //while (true)
+            //{
+            //    time++;
+            //    if (time == 10000000)
+            //        time = 0;
+            //}
         }
 
         void LoadRom(string path)
