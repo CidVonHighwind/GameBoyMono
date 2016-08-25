@@ -56,7 +56,7 @@ namespace GameBoyMono
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             
-            //LoadRom(parameter[0]);
+            LoadRom(parameter[0]);
             //LoadRamDump(parameter[0]);
 
             gbCPU.Start();

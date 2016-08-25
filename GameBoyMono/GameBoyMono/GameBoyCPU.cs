@@ -50,20 +50,15 @@ namespace GameBoyMono
         public ushort reg_SP;
         public ushort reg_PC;
 
-        public byte reg_S { get { return (byte)(reg_SP >> 8); } set { reg_SP = (ushort)((value << 8) | (reg_SP & 0x00FF)); } }
-        public byte reg_P { get { return (byte)(reg_SP & 0x00FF); } set { reg_SP = (ushort)(value | (reg_SP & 0xFF00)); } }
+        //public byte reg_S { get { return (byte)(reg_SP >> 8); } set { reg_SP = (ushort)((value << 8) | (reg_SP & 0x00FF)); } }
+        //public byte reg_P { get { return (byte)(reg_SP & 0x00FF); } set { reg_SP = (ushort)(value | (reg_SP & 0xFF00)); } }
 
         bool dataUpdated;
         byte _data8;
         ushort _data16;
         public byte data8 { get { if (!dataUpdated) { dataUpdated = true; _data8 = generalMemory[reg_PC++]; } return _data8; } }
         public ushort data16 { get { if (!dataUpdated) { dataUpdated = true; _data16 = (ushort)(generalMemory[reg_PC++] | (generalMemory[reg_PC++] << 8)); } return _data16; } }
-
-        public byte getGMemory(ushort pos)
-        {
-            return generalMemory[pos];
-        }
-
+        
         // Interrupt Master Enable Flag (write only)
         public bool IME, cbInstructions;
         
@@ -117,11 +112,13 @@ namespace GameBoyMono
 
             MountDMGRom();
 
-            sbyte sb1 = -40;
-            byte b1 = 12;
+            reg_A = 1;
+            bool test = reg_A == 0x00;
 
-            int ab = sb1 + b1;
-            ab = 0;
+            byte b1 = 0xF3;
+            int in1 = (sbyte)b1 + 0x34;
+
+            test = false;
         }
 
         public void Update(GameTime gametime)
@@ -133,10 +130,13 @@ namespace GameBoyMono
         {
             while (true)
             {
-                nextInstruction();
+                if (reg_DE == 0x132) { }
+                if (reg_PC == 0x32 )
+                {
+                    //break;
+                }
 
-                if (reg_PC == 0xe6)
-                    break;
+                nextInstruction();
             }
         }
 
