@@ -95,10 +95,11 @@ namespace GameBoyMono
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
+            
+            gbRenderer.Draw(spriteBatch);
 
             spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
 
-            gbRenderer.Draw(spriteBatch);
 
             //spriteBatch.DrawString(font0, "" + time, new Vector2(0, 0), Color.Red);
 

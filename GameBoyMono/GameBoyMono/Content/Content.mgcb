@@ -19,3 +19,9 @@
 /processorParam:TextureFormat=Compressed
 /build:font0.spritefont
 
+#begin gbShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:gbShader.fx
+

@@ -13,10 +13,18 @@ namespace GameBoyMono
     {
         Texture2D sprTileData0, sprTileData1;
 
+        Effect gbShader;
+
         public void Load(ContentManager Content)
         {
             LoadTexture(out sprTileData0, 0);
             LoadTexture(out sprTileData1, 1);
+
+            gbShader = Content.Load<Effect>("gbShader");
+            gbShader.Parameters["color1"].SetValue(new Vector4(0, 0, 0, 1));
+            gbShader.Parameters["color2"].SetValue(new Vector4(0, 0.33f, 0.33f, 1));
+            gbShader.Parameters["color3"].SetValue(new Vector4(0.66f, 0, 0.66f, 1));
+            gbShader.Parameters["color4"].SetValue(new Vector4(1, 1, 1, 1));
         }
 
         public void Update()
@@ -25,13 +33,35 @@ namespace GameBoyMono
             LoadTexture(out sprTileData1, 1);
         }
 
+        /*
+            FF47 - BGP - BG Palette Data (R/W) - Non CGB Mode Only
+            This register assigns gray shades to the color numbers of the BG and Window tiles.
+            
+              Bit 7-6 - Shade for Color Number 3
+              Bit 5-4 - Shade for Color Number 2
+              Bit 3-2 - Shade for Color Number 1
+              Bit 1-0 - Shade for Color Number 0
+            
+            The four possible gray shades are:
+            
+              0  White
+              1  Light gray
+              2  Dark gray
+              3  Black
+
+            FF48 - OBP0 - Object Palette 0 Data (R/W): for sprite palett 0
+            FF49 - OBP1 - Object Palette 1 Data (R/W): for sprite palett 1
+        */
+
         public void Draw(SpriteBatch spriteBatch)
         {
+            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
+
             // draw the tiledata
             int scale = 1;
             spriteBatch.Draw(sprTileData0, new Rectangle(0, 264, sprTileData0.Width * scale, sprTileData0.Height * scale), Color.White);
             spriteBatch.Draw(sprTileData1, new Rectangle(sprTileData0.Width * scale + 8, 264, sprTileData1.Width * scale, sprTileData1.Height * scale), Color.White);
-            
+
             int drawPosX = Game1.gbCPU.generalMemory[0xFF43];
             int drawPosY = Game1.gbCPU.generalMemory[0xFF42];
 
@@ -81,7 +111,7 @@ namespace GameBoyMono
 
                 int posX = (i - startAddress) % 32;
                 int posY = (i - startAddress) / 32;
-                spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(WX + posX * 8, WY + posY * 8 - 7, 8, 8), 
+                spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(WX + posX * 8, WY + posY * 8 - 7, 8, 8),
                     new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
             }
 
@@ -116,17 +146,23 @@ namespace GameBoyMono
                     tileNumber = (byte)(tileNumber & 0xFE);
 
                 // draw the tile
-                spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16, 8, 8), new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8), 
+                spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16, 8, 8), new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8),
                     Color.White, 0, Vector2.Zero, sprEffect, 0);
-                
+
                 // draw the second part of the sprite if in 8x16 mode
                 if (LCDC_Bit2)
                     spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16 + 8, 8, 8), new Rectangle(((tileNumber + 1) % 16) * 8, ((tileNumber + 1) / 16) * 8, 8, 8),
                         Color.White, 0, Vector2.Zero, sprEffect, 0);
             }
 
+            spriteBatch.End();
+
+            spriteBatch.Begin();
+
             // draw the screenPosition
             spriteBatch.Draw(Game1.sprWhite, new Rectangle(drawPosX, drawPosY, 160, 144), Color.Green * 0.25f);
+
+            spriteBatch.End();
         }
 
         void LoadTexture(out Texture2D sprTexture, int bank)
@@ -164,7 +200,14 @@ namespace GameBoyMono
 
                             // convert the number to a color
                             float color = (3 - data) / 3f;
-                            colorData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] = new Color(color, color, color);
+                            Color cl = new Color(0, 1, 1, 1);
+                            if (data == 1)
+                                cl = new Color(1, 0, 1, 1);
+                            if (data == 2)
+                                cl = new Color(1, 1, 0, 1);
+                            if (data == 3)
+                                cl = new Color(1, 1, 1, 0);
+                            colorData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] = cl;
                         }
                     }
                 }
