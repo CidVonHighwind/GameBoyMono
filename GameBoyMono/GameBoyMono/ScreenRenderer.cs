@@ -19,6 +19,12 @@ namespace GameBoyMono
             LoadTexture(out sprTileData1, 1);
         }
 
+        public void Update()
+        {
+            LoadTexture(out sprTileData0, 0);
+            LoadTexture(out sprTileData1, 1);
+        }
+
         public void Draw(SpriteBatch spriteBatch)
         {
             // draw the tiledata

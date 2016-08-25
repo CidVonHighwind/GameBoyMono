@@ -53,8 +53,11 @@ namespace GameBoyMono
         public byte reg_S { get { return (byte)(reg_SP >> 8); } set { reg_SP = (ushort)((value << 8) | (reg_SP & 0x00FF)); } }
         public byte reg_P { get { return (byte)(reg_SP & 0x00FF); } set { reg_SP = (ushort)(value | (reg_SP & 0xFF00)); } }
 
-        public byte data8;
-        public ushort data16;
+        bool dataUpdated;
+        byte _data8;
+        ushort _data16;
+        public byte data8 { get { if (!dataUpdated) { dataUpdated = true; _data8 = generalMemory[reg_PC++]; } return _data8; } }
+        public ushort data16 { get { if (!dataUpdated) { dataUpdated = true; _data16 = (ushort)(generalMemory[reg_PC++] | (generalMemory[reg_PC++] << 8)); } return _data16; } }
 
         public byte getGMemory(ushort pos)
         {
@@ -62,10 +65,12 @@ namespace GameBoyMono
         }
 
         // Interrupt Master Enable Flag (write only)
-        public bool IME;
-
+        public bool IME, cbInstructions;
+        
         // list of functions
         public Action[] ops, op_cb;
+
+        string opName;
 
         public GameBoyCPU()
         {
@@ -108,23 +113,15 @@ namespace GameBoyMono
 
         public void Start()
         {
-            // entry point 0100-0103
-            reg_PC = 0x100;
+            reg_PC = 0;
 
-            byte b1 = 0xAA;
-            b1 = (byte)(~b1);
+            MountDMGRom();
 
+            sbyte sb1 = -40;
+            byte b1 = 12;
 
-            int size = ops.Length;
-            int size1 = op_cb.Length;
-
-            string str = op_cb[0].Method.Name;
-
-            b1 = 0x80;
-            int b2 = ((sbyte)b1 + 50);
-
-            size = 0;
-
+            int ab = sb1 + b1;
+            ab = 0;
         }
 
         public void Update(GameTime gametime)
@@ -132,9 +129,47 @@ namespace GameBoyMono
 
         }
 
+        public void ThreadUpdate()
+        {
+            while (true)
+            {
+                nextInstruction();
+
+                if (reg_PC == 0xe6)
+                    break;
+            }
+        }
+
         public void nextInstruction()
         {
+            dataUpdated = false;
+            byte currentInstruction = generalMemory[reg_PC++];
 
+            // cb prefix instructions
+            if (cbInstructions)
+            {
+                opName = op_cb[currentInstruction].Method.Name;
+                op_cb[currentInstruction]();
+                cbInstructions = false;
+            }
+            else
+            {
+                opName = ops[currentInstruction].Method.Name;
+                ops[currentInstruction]();
+            }
+            
+            reg_PC = reg_PC;
+        }
+
+        /// <summary>
+        /// copy the dmg rom into the general memory
+        /// </summary>
+        public void MountDMGRom()
+        {
+            for (int i = 0; i < dmgRom.romDump.Length; i++)
+            {
+                generalMemory[i] = dmgRom.romDump[i];
+            }
         }
     }
 }

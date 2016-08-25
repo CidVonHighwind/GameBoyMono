@@ -48,16 +48,26 @@ namespace GameBoyMono
 
         protected override void LoadContent()
         {
+            byte bt1 = 0xFB;
+            int b1 = 0x0C + (int)((sbyte)bt1);
+            b1 = 0;
+
+
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
+            
+            //LoadRom(parameter[0]);
+            //LoadRamDump(parameter[0]);
+
+            gbCPU.Start();
+
+            for (int i = 0x8000; i <= 0x9FFF; i++)
+            {
+                gbCPU.generalMemory[i] = 0xFF;
+            }
 
             gbTimer = new Thread(GameBoyTimer);
             gbTimer.Start();
-
-            //LoadRom(parameter[0]);
-            LoadRamDump(parameter[0]);
-
-            gbCPU.Start();
 
             font0 = Content.Load<SpriteFont>("font0");
 
@@ -76,6 +86,7 @@ namespace GameBoyMono
 
         protected override void Update(GameTime gameTime)
         {
+            gbRenderer.Update();
 
             base.Update(gameTime);
         }
@@ -98,12 +109,7 @@ namespace GameBoyMono
 
         void GameBoyTimer()
         {
-            //while (true)
-            //{
-            //    time++;
-            //    if (time == 10000000)
-            //        time = 0;
-            //}
+            gbCPU.ThreadUpdate();
         }
 
         void LoadRom(string path)
