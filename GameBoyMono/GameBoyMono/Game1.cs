@@ -66,8 +66,8 @@ namespace GameBoyMono
                 gbCPU.generalMemory[i] = 0xFF;
             }
 
-            gbTimer = new Thread(GameBoyTimer);
-            gbTimer.Start();
+            //gbTimer = new Thread(GameBoyTimer);
+            //gbTimer.Start();
 
             font0 = Content.Load<SpriteFont>("font0");
 
@@ -86,8 +86,12 @@ namespace GameBoyMono
 
         protected override void Update(GameTime gameTime)
         {
+            // update the cpu
+            gbCPU.Update(gameTime);
+            
+            // update the renderer
             gbRenderer.Update();
-
+            
             base.Update(gameTime);
         }
 
@@ -101,17 +105,17 @@ namespace GameBoyMono
             spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
 
 
-            //spriteBatch.DrawString(font0, "" + time, new Vector2(0, 0), Color.Red);
+            //spriteBatch.DrawString(font0, "" + gbCPU.generalMemory[0xFF44], new Vector2(0, 0), Color.Red);
 
             spriteBatch.End();
 
             base.Draw(gameTime);
         }
 
-        void GameBoyTimer()
-        {
-            gbCPU.ThreadUpdate();
-        }
+        //void GameBoyTimer()
+        //{
+        //    gbCPU.ThreadUpdate();
+        //}
 
         void LoadRom(string path)
         {

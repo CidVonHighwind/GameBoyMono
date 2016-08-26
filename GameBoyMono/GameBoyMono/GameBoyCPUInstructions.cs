@@ -120,7 +120,7 @@ namespace GameBoyMono
 
         public void LD_aC_A() { generalMemory[0xFF00 + reg_C] = reg_A; }
         public void LD_a16_A() { generalMemory[data16] = reg_A; }
-        public void LD_A_aC() { reg_A = generalMemory[reg_C]; }
+        public void LD_A_aC() { reg_A = generalMemory[0xFF00 + reg_C]; }
         public void LD_A_a16() { reg_A = generalMemory[data16]; }
 
         // LD 16bit
@@ -150,15 +150,15 @@ namespace GameBoyMono
         public void INC_HL() { reg_HL++; }
         public void INC_SP() { reg_SP++; }
 
-        // DEC 8bit
-        public void DEC_B() { reg_B--; flag_Z = (reg_B == 0); flag_N = true; flag_H = ((reg_B & 0x0F) != 0x0F); }
-        public void DEC_D() { reg_D--; flag_Z = (reg_D == 0); flag_N = true; flag_H = ((reg_D & 0x0F) != 0x0F); }
-        public void DEC_H() { reg_H--; flag_Z = (reg_H == 0); flag_N = true; flag_H = ((reg_H & 0x0F) != 0x0F); }
-        public void DEC_aHL() { generalMemory[reg_HL]--; flag_Z = (generalMemory[reg_HL] == 0); flag_N = true; flag_H = ((generalMemory[reg_HL] & 0x0F) != 0x0F); }
-        public void DEC_C() { reg_C--; flag_Z = (reg_C == 0); flag_N = true; flag_H = ((reg_C & 0x0F) != 0x0F); }
-        public void DEC_E() { reg_E--; flag_Z = (reg_E == 0); flag_N = true; flag_H = ((reg_E & 0x0F) != 0x0F); }
-        public void DEC_L() { reg_L--; flag_Z = (reg_L == 0); flag_N = true; flag_H = ((reg_L & 0x0F) != 0x0F); }
-        public void DEC_A() { reg_A--; flag_Z = (reg_A == 0); flag_N = true; flag_H = ((reg_A & 0x0F) != 0x0F); }
+        // DEC 8bit todo flag h right?
+        public void DEC_B() { reg_B--; flag_Z = (reg_B == 0); flag_N = true; flag_H = ((reg_B & 0x0F) == 0x0F); }
+        public void DEC_D() { reg_D--; flag_Z = (reg_D == 0); flag_N = true; flag_H = ((reg_D & 0x0F) == 0x0F); }
+        public void DEC_H() { reg_H--; flag_Z = (reg_H == 0); flag_N = true; flag_H = ((reg_H & 0x0F) == 0x0F); }
+        public void DEC_aHL() { generalMemory[reg_HL]--; flag_Z = (generalMemory[reg_HL] == 0); flag_N = true; flag_H = ((generalMemory[reg_HL] & 0x0F) == 0x0F); }
+        public void DEC_C() { reg_C--; flag_Z = (reg_C == 0); flag_N = true; flag_H = ((reg_C & 0x0F) == 0x0F); }
+        public void DEC_E() { reg_E--; flag_Z = (reg_E == 0); flag_N = true; flag_H = ((reg_E & 0x0F) == 0x0F); }
+        public void DEC_L() { reg_L--; flag_Z = (reg_L == 0); flag_N = true; flag_H = ((reg_L & 0x0F) == 0x0F); }
+        public void DEC_A() { reg_A--; flag_Z = (reg_A == 0); flag_N = true; flag_H = ((reg_A & 0x0F) == 0x0F); }
 
         // DEC 16bit
         public void DEC_BC() { reg_BC--; }

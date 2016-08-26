@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Timers;
 
 namespace GameBoyMono
 {
@@ -58,14 +58,53 @@ namespace GameBoyMono
         ushort _data16;
         public byte data8 { get { if (!dataUpdated) { dataUpdated = true; _data8 = generalMemory[reg_PC++]; } return _data8; } }
         public ushort data16 { get { if (!dataUpdated) { dataUpdated = true; _data16 = (ushort)(generalMemory[reg_PC++] | (generalMemory[reg_PC++] << 8)); } return _data16; } }
-        
+
         // Interrupt Master Enable Flag (write only)
         public bool IME, cbInstructions;
-        
+
         // list of functions
         public Action[] ops, op_cb;
 
         string opName;
+
+        int maxCycles = 69905, cycleCount;
+
+        Timer gbTimer = new Timer();
+
+        byte[] cycleArray = new byte[] {    04,12,08,08,04,04,08,04,20,08,08,08,04,04,08,04,
+                                            04,12,08,08,04,04,08,04,12,08,08,08,04,04,08,04,
+                                            08,12,08,08,04,04,08,04,08,08,08,08,04,04,08,04,
+                                            08,12,08,08,12,12,12,04,08,08,08,08,04,04,08,04,
+                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
+                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
+                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
+                                            08,08,08,08,08,08,04,08,04,04,04,04,04,04,08,04,
+                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
+                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
+                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
+                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
+                                            08,12,12,16,12,16,08,16,08,16,12,04,12,24,08,16,
+                                            08,12,12,00,12,16,08,16,08,16,12,00,12,00,08,16,
+                                            12,12,08,00,00,16,08,16,16,04,16,00,00,00,08,16,
+                                            12,12,08,04,00,16,08,16,12,08,16,04,00,00,08,16};
+
+
+        byte[] cycleCBArray = new byte[] {  8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8 };
 
         public GameBoyCPU()
         {
@@ -108,37 +147,52 @@ namespace GameBoyMono
 
         public void Start()
         {
-            reg_PC = 0;
+            reg_PC = 0x0;
 
             MountDMGRom();
 
-            reg_A = 1;
-            bool test = reg_A == 0x00;
-
-            byte b1 = 0xF3;
-            int in1 = (sbyte)b1 + 0x34;
-
-            test = false;
+            //gbTimer.Interval = 0.0001;
+            //gbTimer.Elapsed += GbTimer_Elapsed;
+            //gbTimer.Start();
         }
 
         public void Update(GameTime gametime)
         {
-
-        }
-
-        public void ThreadUpdate()
-        {
-            while (true)
+            while (cycleCount < maxCycles)
             {
-                if (reg_DE == 0x132) { }
-                if (reg_PC == 0x32 )
-                {
-                    //break;
-                }
+                // update cycle count
+                cycleCount += cycleArray[generalMemory[reg_PC]];
+
+                generalMemory[0xFF44] = (byte)(153 * (cycleCount / (float)maxCycles));
+
+                if (reg_PC == 0xFE) { }
 
                 nextInstruction();
             }
+
+            cycleCount -= maxCycles;
         }
+
+        //public void ThreadUpdate()
+        //{
+        //    while (true)
+        //    {
+        //        if (reg_PC == 0x6A) { }
+
+        //        nextInstruction();
+        //    }
+        //}
+
+        //private void GbTimer_Elapsed(object sender, ElapsedEventArgs e)
+        //{
+        //    if (++generalMemory[0xFF44] > 153)
+        //        generalMemory[0xFF44] = 0;
+
+        //    if (generalMemory[0xFF44] == 144)
+        //    {
+
+        //    }
+        //}
 
         public void nextInstruction()
         {
@@ -157,8 +211,10 @@ namespace GameBoyMono
                 opName = ops[currentInstruction].Method.Name;
                 ops[currentInstruction]();
             }
-            
-            reg_PC = reg_PC;
+
+
+            if (generalMemory[0xFF44] == 144)
+                generalMemory[0xFF44]++;
         }
 
         /// <summary>
