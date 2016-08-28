@@ -342,16 +342,16 @@ namespace GameBoyMono
         // JP/JR
         public void JP_a16() { reg_PC = data16; }
         public void JP_aHL() { reg_PC = generalMemory[reg_HL]; }
-        public void JP_NZ_a16() { temp = data16; if (!flag_Z) reg_PC = data16; }
-        public void JP_Z_a16() { temp = data16; if (flag_Z) reg_PC = data16; }
-        public void JP_NC_a16() { temp = data16; if (!flag_C) reg_PC = data16; }
-        public void JP_C_a16() { temp = data16; if (flag_C) reg_PC = data16; }
+        public void JP_NZ_a16() { if (!flag_Z) reg_PC = data16; }
+        public void JP_Z_a16() { if (flag_Z) reg_PC = data16; }
+        public void JP_NC_a16() { if (!flag_C) reg_PC = data16; }
+        public void JP_C_a16() { if (flag_C) reg_PC = data16; }
 
-        public void JR_d8() { temp = data8; reg_PC = (ushort)((sbyte)data8 + reg_PC); } // order is important!
-        public void JR_NZ_a8() { temp = data8; if (!flag_Z) JR_d8(); }
-        public void JR_Z_a8() { temp = data8; if (flag_Z) JR_d8(); }
-        public void JR_NC_a8() { temp = data8; if (!flag_C) JR_d8(); }
-        public void JR_C_a8() { temp = data8; if (flag_C) JR_d8(); }
+        public void JR_d8() { reg_PC = (ushort)((sbyte)data8 + reg_PC); } 
+        public void JR_NZ_a8() { if (!flag_Z) JR_d8(); }
+        public void JR_Z_a8() { if (flag_Z) JR_d8(); }
+        public void JR_NC_a8() { if (!flag_C) JR_d8(); }
+        public void JR_C_a8() { if (flag_C) JR_d8(); }
 
         // POP/PUSH
         public void POP_BC() { reg_C = generalMemory[reg_SP++]; reg_B = generalMemory[reg_SP++]; }
@@ -365,7 +365,7 @@ namespace GameBoyMono
         public void PUSH_AF() { generalMemory[--reg_SP] = reg_A; generalMemory[--reg_SP] = reg_F; }
 
         // Returns
-        public void RET() { reg_PC = (ushort)(generalMemory[reg_SP++] | (generalMemory[reg_SP++] << 8)); }
+        public void RET() { reg_PC = generalMemory[reg_SP++]; reg_PC += (ushort)(generalMemory[reg_SP++] << 8); }
         public void RET_NZ() { if (!flag_Z) RET(); }
         public void RET_Z() { if (flag_Z) RET(); }
         public void RET_NC() { if (!flag_C) RET(); }
@@ -374,21 +374,21 @@ namespace GameBoyMono
         public void RETI() { RET(); EI(); }
 
         // CALL
-        public void CALL_a16() { temp = data16; generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = (ushort)temp; }
-        public void CALL_NZ_a16() { temp = data16; if (!flag_Z) CALL_a16(); }
-        public void CALL_Z_a16() { temp = data16; if (flag_Z) CALL_a16(); }
-        public void CALL_NC_a16() { temp = data16; if (!flag_C) CALL_a16(); }
-        public void CALL_C_a16() { temp = data16; if (flag_C) CALL_a16(); }
+        public void CALL_a16() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = data16; }
+        public void CALL_NZ_a16() { if (!flag_Z) CALL_a16(); }
+        public void CALL_Z_a16() { if (flag_Z) CALL_a16(); }
+        public void CALL_NC_a16() { if (!flag_C) CALL_a16(); }
+        public void CALL_C_a16() { if (flag_C) CALL_a16(); }
 
         // RST - Restart
-        public void RST_00H() { generalMemory[--reg_SP] = (byte)((reg_PC) >> 8); generalMemory[--reg_SP] = (byte)((reg_PC) & 0xFF); reg_PC = 0x00; }
-        public void RST_08H() { generalMemory[--reg_SP] = (byte)((reg_PC) >> 8); generalMemory[--reg_SP] = (byte)((reg_PC) & 0xFF); reg_PC = 0x08; }
-        public void RST_10H() { generalMemory[--reg_SP] = (byte)((reg_PC) >> 8); generalMemory[--reg_SP] = (byte)((reg_PC) & 0xFF); reg_PC = 0x10; }
-        public void RST_18H() { generalMemory[--reg_SP] = (byte)((reg_PC) >> 8); generalMemory[--reg_SP] = (byte)((reg_PC) & 0xFF); reg_PC = 0x18; }
-        public void RST_20H() { generalMemory[--reg_SP] = (byte)((reg_PC) >> 8); generalMemory[--reg_SP] = (byte)((reg_PC) & 0xFF); reg_PC = 0x20; }
-        public void RST_28H() { generalMemory[--reg_SP] = (byte)((reg_PC) >> 8); generalMemory[--reg_SP] = (byte)((reg_PC) & 0xFF); reg_PC = 0x28; }
-        public void RST_30H() { generalMemory[--reg_SP] = (byte)((reg_PC) >> 8); generalMemory[--reg_SP] = (byte)((reg_PC) & 0xFF); reg_PC = 0x30; }
-        public void RST_38H() { generalMemory[--reg_SP] = (byte)((reg_PC) >> 8); generalMemory[--reg_SP] = (byte)((reg_PC) & 0xFF); reg_PC = 0x38; }
+        public void RST_08H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x08; }
+        public void RST_00H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x00; }
+        public void RST_10H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x10; }
+        public void RST_18H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x18; }
+        public void RST_20H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x20; }
+        public void RST_28H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x28; }
+        public void RST_30H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x30; }
+        public void RST_38H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x38; }
 
         // CB instructions
         // RLC
@@ -431,7 +431,7 @@ namespace GameBoyMono
             temp = generalMemory[reg_HL]; generalMemory[reg_HL] = (byte)((generalMemory[reg_HL] << 1) | (flag_C ? 1 : 0));
             flag_C = (temp & 0x80) == 0x80; flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false;
         }
-        public void RL_A() { temp = reg_B; reg_A = (byte)((reg_A << 1) | (flag_C ? 1 : 0)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x80) == 0x80; }
+        public void RL_A() { temp = reg_A; reg_A = (byte)((reg_A << 1) | (flag_C ? 1 : 0)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x80) == 0x80; }
 
         // RR
         public void RR_B() { temp = reg_B; reg_B = (byte)((reg_B >> 1) | (flag_C ? 0x80 : 0)); flag_Z = reg_B == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x01) == 0x01; }

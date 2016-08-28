@@ -9,7 +9,8 @@ namespace GameBoyMono
 {
     public partial class GameBoyCPU
     {
-        public byte[] generalMemory = new byte[65536];
+        //private byte[] _generalMemory = new byte[65536];
+        public GeneralMemory generalMemory = new GeneralMemory();
 
         public byte[] romBegining;
 
@@ -52,14 +53,9 @@ namespace GameBoyMono
         public ushort reg_SP;
         public ushort reg_PC;
 
-        //public byte reg_S { get { return (byte)(reg_SP >> 8); } set { reg_SP = (ushort)((value << 8) | (reg_SP & 0x00FF)); } }
-        //public byte reg_P { get { return (byte)(reg_SP & 0x00FF); } set { reg_SP = (ushort)(value | (reg_SP & 0xFF00)); } }
 
-        bool dataUpdated;
-        byte _data8;
-        ushort _data16;
-        public byte data8 { get { if (!dataUpdated) { dataUpdated = true; _data8 = generalMemory[reg_PC++]; } return _data8; } }
-        public ushort data16 { get { if (!dataUpdated) { dataUpdated = true; _data16 = (ushort)(generalMemory[reg_PC++] | (generalMemory[reg_PC++] << 8)); } return _data16; } }
+        public byte data8 { get { return generalMemory[reg_PC - 1]; } }
+        public ushort data16 { get { return (ushort)(generalMemory[reg_PC - 2] | (generalMemory[reg_PC - 1] << 8)); } }
 
         // Interrupt Master Enable Flag (write only)
         public bool IME, cbInstructions;
@@ -69,9 +65,9 @@ namespace GameBoyMono
 
         string opName;
 
-        int maxCycles = 70224, cycleCount;  // 69905
+        int maxCycles = 70224, cycleCount;  // 69905 70224
 
-        bool romMounted;
+        public bool romMounted, gameStarted, bugFound;
 
         Timer gbTimer = new Timer();
 
@@ -93,22 +89,39 @@ namespace GameBoyMono
                                             12,12,08,04,00,16,08,16,12,08,16,04,00,00,08,16};
 
 
-        byte[] cycleCBArray = new byte[] {  8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
-                                            8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8 };
+        byte[] cycleCBArray = new byte[] {  08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
+                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08 };
+
+        byte[] opLength = new byte[] {      1,3,1,1,1,1,2,1,3,1,1,1,1,1,2,1,
+                                            2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
+                                            2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
+                                            2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
+                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                            1,1,3,3,3,1,2,1,1,1,3,1,3,3,2,1,
+                                            1,1,3,0,3,1,2,1,1,1,3,0,3,0,2,1,
+                                            2,1,2,0,0,1,2,1,2,1,3,0,0,0,2,1,
+                                            2,1,2,1,0,1,2,1,2,1,3,1,0,0,2,1 };
 
         public GameBoyCPU()
         {
@@ -151,13 +164,9 @@ namespace GameBoyMono
 
         public void Start()
         {
-            reg_PC = 0x100;
+            reg_PC = 0x00;
 
-            //MountDMGRom();
-
-            //gbTimer.Interval = 0.0001;
-            //gbTimer.Elapsed += GbTimer_Elapsed;
-            //gbTimer.Start();
+            MountDMGRom();
         }
 
         public void Update(GameTime gametime)
@@ -167,13 +176,19 @@ namespace GameBoyMono
                 // update cycle count
                 cycleCount += cycleArray[generalMemory[reg_PC]];
 
+                byte oldLY = generalMemory[0xFF44];
                 // set the LY value
                 generalMemory[0xFF44] = (byte)(153 * (cycleCount / (float)maxCycles));
 
-                // v-blank period
-                if (generalMemory[0xFF44] >= 144)
+                // v-blank interrupt
+                if (oldLY == 143 && generalMemory[0xFF44] == 144)
                 {
-                    generalMemory[0xFF0F] &= 0x01;
+                    generalMemory[0xFF0F] |= 0x01;  // set bit 0
+
+                    if (IME && (generalMemory[0xFFFF] & 0x01) == 0x01)
+                    {
+                        VblankInterrupt();
+                    }
                 }
 
                 // set coincidence flag
@@ -182,7 +197,7 @@ namespace GameBoyMono
                     generalMemory[0xFF41] |= 0x04;  // set bit 2
 
                     // LCD STAT interrupt
-                    if ((generalMemory[0xFFFF] & 0x02) == 0x02) { }
+                    if (IME && (generalMemory[0xFFFF] & 0x02) == 0x02) { }
                 }
                 else
                     generalMemory[0xFF41] &= 0xFB;
@@ -202,7 +217,7 @@ namespace GameBoyMono
                     // 0: 201-207   (205)   H-Blank 
                     // cycle: 456 clks
                     // 144*456 + 4560 = 70224
-                    if (smallCycle <  80)
+                    if (smallCycle < 80)
                         generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC) + 0x02);
                     if (smallCycle < 251)
                         generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC) + 0x03);
@@ -210,69 +225,88 @@ namespace GameBoyMono
                         generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC));
                 }
 
-                /*
-                  FFFF - IE - Interrupt Enable (R/W)
-                  Bit 0: V-Blank  Interrupt Enable  (INT 40h)  (1=Enable)
-                  Bit 1: LCD STAT Interrupt Enable  (INT 48h)  (1=Enable)
-                  Bit 2: Timer    Interrupt Enable  (INT 50h)  (1=Enable)
-                  Bit 3: Serial   Interrupt Enable  (INT 58h)  (1=Enable)
-                  Bit 4: Joypad   Interrupt Enable  (INT 60h)  (1=Enable)
-                */
-                if ((generalMemory[0xFFFF] & 0x01) == 0x01) { }
-
+                // execute next instruction
                 nextInstruction();
 
+                if (bugFound)
+                {
+
+                }
                 if (romMounted & reg_PC == 0x100)
+                {
                     UnmountDMGRom();
+                    gameStarted = true;
+                }
             }
 
             cycleCount -= maxCycles;
         }
 
-        //public void ThreadUpdate()
-        //{
-        //    while (true)
-        //    {
-        //        if (reg_PC == 0x6A) { }
-
-        //        nextInstruction();
-        //    }
-        //}
-
-        //private void GbTimer_Elapsed(object sender, ElapsedEventArgs e)
-        //{
-        //    if (++generalMemory[0xFF44] > 153)
-        //        generalMemory[0xFF44] = 0;
-
-        //    if (generalMemory[0xFF44] == 144)
-        //    {
-
-        //    }
-        //}
-
         public void nextInstruction()
         {
-            dataUpdated = false;
-            byte currentInstruction = generalMemory[reg_PC++];
+            byte currentInstruction = generalMemory[reg_PC];
             Action action;
 
             // cb prefix instructions
             if (cbInstructions)
             {
+                reg_PC++;
                 action = op_cb[currentInstruction];
                 cbInstructions = false;
             }
             else
+            {
+                reg_PC += opLength[generalMemory[reg_PC]];
                 action = ops[currentInstruction];
+            }
 
             if (action != null)
             {
                 action();
                 opName = action.Method.Name;
             }
+            else
+            {
 
-            if (generalMemory[0xFF44] == 144)
-                generalMemory[0xFF44]++;
+            }
+        }
+
+        /*
+          FFFF - IE - Interrupt Enable (R/W)
+          Bit 0: V-Blank  Interrupt Enable  (INT 40h)  (1=Enable)
+          Bit 1: LCD STAT Interrupt Enable  (INT 48h)  (1=Enable)
+          Bit 2: Timer    Interrupt Enable  (INT 50h)  (1=Enable)
+          Bit 3: Serial   Interrupt Enable  (INT 58h)  (1=Enable)
+          Bit 4: Joypad   Interrupt Enable  (INT 60h)  (1=Enable)
+        */
+
+        public void ExecuteInterrupt()
+        {
+            // disable interrupts
+            IME = false;
+            // put the PC 
+            generalMemory[--reg_SP] = (byte)(reg_PC >> 8);
+            generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF);
+        }
+
+        public void VblankInterrupt()
+        {
+            ExecuteInterrupt();
+
+            // disable interrupt flag
+            generalMemory[0xFF0F] &= 0xFE;
+            // jump to address
+            reg_PC = 0x40;
+        }
+
+        public void HblankInterrupt()
+        {
+            ExecuteInterrupt();
+
+            // disable interrupt flag
+            generalMemory[0xFF0F] &= 0xFE;
+            // jump to address
+            reg_PC = 0x48;
         }
 
         /// <summary>
