@@ -25,16 +25,12 @@ namespace GameBoyMono
         public static Texture2D sprWhite;
 
         ScreenRenderer gbRenderer = new ScreenRenderer();
-
-        Thread gbTimer;
-        float time;
-        Timer systemTimer;
-
+        
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
-            graphics.PreferredBackBufferWidth = 1200;
-            graphics.PreferredBackBufferHeight = 800;
+            graphics.PreferredBackBufferWidth = 1600;
+            graphics.PreferredBackBufferHeight = 900;
             graphics.ApplyChanges();
             Content.RootDirectory = "Content";
         }
@@ -60,12 +56,7 @@ namespace GameBoyMono
             //LoadRamDump(parameter[0]);
 
             gbCPU.Start();
-
-            for (int i = 0x8000; i <= 0x9FFF; i++)
-            {
-                gbCPU.generalMemory[i] = 0xFF;
-            }
-
+            
             //gbTimer = new Thread(GameBoyTimer);
             //gbTimer.Start();
 
@@ -105,18 +96,23 @@ namespace GameBoyMono
             spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
 
 
-            //spriteBatch.DrawString(font0, "" + gbCPU.generalMemory[0xFF44], new Vector2(0, 0), Color.Red);
+            //spriteBatch.DrawString(font0, "" + gbCPU.reg_PC, new Vector2(0, 0), Color.Red);
+
+            //for (int y = 0; y < 16; y++)
+            //{
+            //    for (int x = 0; x < 16; x++)
+            //    {
+            //        System.Action action = gbCPU.ops[x + y * 16];
+            //        if(action != null)
+            //        spriteBatch.DrawString(font0, action.Method.Name, new Vector2(30 + x * 83 + 41 - (int)(font0.MeasureString(action.Method.Name).X / 2), 20 + y * 40), Color.White);
+            //    }
+            //}
 
             spriteBatch.End();
 
             base.Draw(gameTime);
         }
-
-        //void GameBoyTimer()
-        //{
-        //    gbCPU.ThreadUpdate();
-        //}
-
+        
         void LoadRom(string path)
         {
             using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read))

@@ -184,8 +184,8 @@ namespace GameBoyMono
         // maybe
         public void ADD_SP_r8()
         {
-            flag_Z = false; flag_N = false; flag_H = ((reg_SP + (sbyte)data8) & 0xFFF0) > (reg_SP & 0xFFF0);
-            flag_C = (reg_SP + (sbyte)data8) > 0xFF; reg_SP += (ushort)((sbyte)data8);
+            flag_Z = false; flag_N = false; flag_H = ((reg_SP & 0x0FFF) + (sbyte)data8) > 0x0FFF;
+            flag_C = (reg_SP + (sbyte)data8) > 0xFFFF; reg_SP = (ushort)(reg_SP + (sbyte)data8);
         }
 
 
@@ -370,8 +370,7 @@ namespace GameBoyMono
         public void RET_Z() { if (flag_Z) RET(); }
         public void RET_NC() { if (!flag_C) RET(); }
         public void RET_C() { if (flag_C) RET(); }
-
-        // right order?
+        
         public void RETI() { RET(); EI(); }
 
         // CALL

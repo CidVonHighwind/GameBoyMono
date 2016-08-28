@@ -11,6 +11,8 @@ namespace GameBoyMono
     {
         public byte[] generalMemory = new byte[65536];
 
+        public byte[] romBegining;
+
         /* 
          * A-accumulator
          * F-flags
@@ -67,7 +69,9 @@ namespace GameBoyMono
 
         string opName;
 
-        int maxCycles = 69905, cycleCount;
+        int maxCycles = 70224, cycleCount;  // 69905
+
+        bool romMounted;
 
         Timer gbTimer = new Timer();
 
@@ -117,7 +121,7 @@ namespace GameBoyMono
                 LD_D_B, LD_D_C, LD_D_D, LD_D_E, LD_D_H, LD_D_L, LD_D_aHL, LD_D_A, LD_E_B, LD_E_C, LD_E_D, LD_E_E, LD_E_H, LD_E_L, LD_E_aHL, LD_E_A,
                 LD_H_B, LD_H_C, LD_H_D, LD_H_E, LD_H_H, LD_H_L, LD_H_aHL, LD_H_A, LD_L_B, LD_L_C, LD_L_D, LD_L_E, LD_L_H, LD_L_L, LD_L_aHL, LD_L_A,
                 LD_aHL_B, LD_aHL_C, LD_aHL_D, LD_aHL_E, LD_aHL_H, LD_aHL_L, HALT, LD_aHL_A, LD_A_B, LD_A_C, LD_A_D, LD_A_E, LD_A_H, LD_A_L, LD_A_aHL, LD_A_A,
-                ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A_aHL, ADD_A_A, ADC_A_C, ADC_A_C, ADC_A_C, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A_aHL, ADC_A_A,
+                ADD_A_B, ADD_A_C, ADD_A_D, ADD_A_E, ADD_A_H, ADD_A_L, ADD_A_aHL, ADD_A_A, ADC_A_B, ADC_A_C, ADC_A_D, ADC_A_E, ADC_A_H, ADC_A_L, ADC_A_aHL, ADC_A_A,
                 SUB_B, SUB_C, SUB_D, SUB_E, SUB_H, SUB_L, SUB_aHL, SUB_A, SBC_A_B, SBC_A_C, SBC_A_D, SBC_A_E, SBC_A_H, SBC_A_L, SBC_A_aHL, SBC_A_A,
                 AND_B, AND_C, AND_D, AND_E, AND_H, AND_L, AND_aHL, AND_A, XOR_B, XOR_C, XOR_D, XOR_E, XOR_H, XOR_L, XOR_aHL, XOR_A,
                 OR_B, OR_C, OR_D, OR_E, OR_H, OR_L, OR_aHL, OR_A, CP_B, CP_C, CP_D, CP_E, CP_H, CP_L, CP_aHL, CP_A,
@@ -147,9 +151,9 @@ namespace GameBoyMono
 
         public void Start()
         {
-            reg_PC = 0x0;
+            reg_PC = 0x100;
 
-            MountDMGRom();
+            //MountDMGRom();
 
             //gbTimer.Interval = 0.0001;
             //gbTimer.Elapsed += GbTimer_Elapsed;
@@ -163,11 +167,63 @@ namespace GameBoyMono
                 // update cycle count
                 cycleCount += cycleArray[generalMemory[reg_PC]];
 
+                // set the LY value
                 generalMemory[0xFF44] = (byte)(153 * (cycleCount / (float)maxCycles));
 
-                if (reg_PC == 0xFE) { }
+                // v-blank period
+                if (generalMemory[0xFF44] >= 144)
+                {
+                    generalMemory[0xFF0F] &= 0x01;
+                }
+
+                // set coincidence flag
+                if (generalMemory[0xFF44] == generalMemory[0xFF45]) //LY == LYC
+                {
+                    generalMemory[0xFF41] |= 0x04;  // set bit 2
+
+                    // LCD STAT interrupt
+                    if ((generalMemory[0xFFFF] & 0x02) == 0x02) { }
+                }
+                else
+                    generalMemory[0xFF41] &= 0xFB;
+
+                // set mode flag
+                if (generalMemory[0xFF44] >= 144)
+                {
+                    generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC) + 0x01);  // v-blank flag
+                }
+                else
+                {
+                    // mode 2,3,0 cycle
+                    int smallCycle = cycleCount % 456;
+
+                    // 2: 77-84     (80)    read oam memory
+                    // 3: 169-175   (171)   transf data to lcd
+                    // 0: 201-207   (205)   H-Blank 
+                    // cycle: 456 clks
+                    // 144*456 + 4560 = 70224
+                    if (smallCycle <  80)
+                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC) + 0x02);
+                    if (smallCycle < 251)
+                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC) + 0x03);
+                    else
+                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC));
+                }
+
+                /*
+                  FFFF - IE - Interrupt Enable (R/W)
+                  Bit 0: V-Blank  Interrupt Enable  (INT 40h)  (1=Enable)
+                  Bit 1: LCD STAT Interrupt Enable  (INT 48h)  (1=Enable)
+                  Bit 2: Timer    Interrupt Enable  (INT 50h)  (1=Enable)
+                  Bit 3: Serial   Interrupt Enable  (INT 58h)  (1=Enable)
+                  Bit 4: Joypad   Interrupt Enable  (INT 60h)  (1=Enable)
+                */
+                if ((generalMemory[0xFFFF] & 0x01) == 0x01) { }
 
                 nextInstruction();
+
+                if (romMounted & reg_PC == 0x100)
+                    UnmountDMGRom();
             }
 
             cycleCount -= maxCycles;
@@ -198,20 +254,22 @@ namespace GameBoyMono
         {
             dataUpdated = false;
             byte currentInstruction = generalMemory[reg_PC++];
+            Action action;
 
             // cb prefix instructions
             if (cbInstructions)
             {
-                opName = op_cb[currentInstruction].Method.Name;
-                op_cb[currentInstruction]();
+                action = op_cb[currentInstruction];
                 cbInstructions = false;
             }
             else
-            {
-                opName = ops[currentInstruction].Method.Name;
-                ops[currentInstruction]();
-            }
+                action = ops[currentInstruction];
 
+            if (action != null)
+            {
+                action();
+                opName = action.Method.Name;
+            }
 
             if (generalMemory[0xFF44] == 144)
                 generalMemory[0xFF44]++;
@@ -222,10 +280,27 @@ namespace GameBoyMono
         /// </summary>
         public void MountDMGRom()
         {
+            romBegining = new byte[dmgRom.romDump.Length];
+
             for (int i = 0; i < dmgRom.romDump.Length; i++)
             {
+                romBegining[i] = generalMemory[i];
+
                 generalMemory[i] = dmgRom.romDump[i];
             }
+
+            romMounted = true;
+        }
+
+        /// <summary>
+        /// unmount the dmg-rom
+        /// </summary>
+        public void UnmountDMGRom()
+        {
+            for (int i = 0; i < dmgRom.romDump.Length; i++)
+                generalMemory[i] = romBegining[i];
+
+            romMounted = false;
         }
     }
 }
