@@ -53,6 +53,7 @@ namespace GameBoyMono
         public ushort reg_SP;
         public ushort reg_PC;
 
+        int pre0, pre1, pre2, pre3, pre4, pre5, pre6, pre7;
 
         public byte data8 { get { return generalMemory[reg_PC - 1]; } }
         public ushort data16 { get { return (ushort)(generalMemory[reg_PC - 2] | (generalMemory[reg_PC - 1] << 8)); } }
@@ -87,8 +88,7 @@ namespace GameBoyMono
                                             08,12,12,00,12,16,08,16,08,16,12,00,12,00,08,16,
                                             12,12,08,00,00,16,08,16,16,04,16,00,00,00,08,16,
                                             12,12,08,04,00,16,08,16,12,08,16,04,00,00,08,16};
-
-
+        
         byte[] cycleCBArray = new byte[] {  08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
@@ -107,7 +107,7 @@ namespace GameBoyMono
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08 };
 
         byte[] opLength = new byte[] {      1,3,1,1,1,1,2,1,3,1,1,1,1,1,2,1,
-                                            2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
+                                            1,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
                                             2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
                                             2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
                                             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -120,8 +120,8 @@ namespace GameBoyMono
                                             1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                                             1,1,3,3,3,1,2,1,1,1,3,1,3,3,2,1,
                                             1,1,3,0,3,1,2,1,1,1,3,0,3,0,2,1,
-                                            2,1,2,0,0,1,2,1,2,1,3,0,0,0,2,1,
-                                            2,1,2,1,0,1,2,1,2,1,3,1,0,0,2,1 };
+                                            2,1,1,0,0,1,2,1,2,1,3,0,0,0,2,1,
+                                            2,1,1,1,0,1,2,1,2,1,3,1,0,0,2,1 };
 
         public GameBoyCPU()
         {
@@ -175,6 +175,7 @@ namespace GameBoyMono
             {
                 // update cycle count
                 cycleCount += cycleArray[generalMemory[reg_PC]];
+                
 
                 byte oldLY = generalMemory[0xFF44];
                 // set the LY value
@@ -184,11 +185,10 @@ namespace GameBoyMono
                 if (oldLY == 143 && generalMemory[0xFF44] == 144)
                 {
                     generalMemory[0xFF0F] |= 0x01;  // set bit 0
-
-                    if (IME && (generalMemory[0xFFFF] & 0x01) == 0x01)
-                    {
-                        VblankInterrupt();
-                    }
+                }
+                if (IME && (generalMemory[0xFFFF] & 0x01) == 0x01)
+                {
+                    VblankInterrupt();
                 }
 
                 // set coincidence flag
@@ -205,7 +205,7 @@ namespace GameBoyMono
                 // set mode flag
                 if (generalMemory[0xFF44] >= 144)
                 {
-                    generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC) + 0x01);  // v-blank flag
+                    generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x01);  // v-blank flag
                 }
                 else
                 {
@@ -218,11 +218,11 @@ namespace GameBoyMono
                     // cycle: 456 clks
                     // 144*456 + 4560 = 70224
                     if (smallCycle < 80)
-                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC) + 0x02);
+                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x02);
                     if (smallCycle < 251)
-                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC) + 0x03);
+                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x03);
                     else
-                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF44] & 0xFC));
+                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC));
                 }
 
                 // execute next instruction
@@ -244,6 +244,15 @@ namespace GameBoyMono
 
         public void nextInstruction()
         {
+            pre7 = pre6;
+            pre6 = pre5;
+            pre5 = pre4;
+            pre4 = pre3;
+            pre3 = pre2;
+            pre2 = pre1;
+            pre1 = pre0;
+            pre0 = reg_PC;
+
             byte currentInstruction = generalMemory[reg_PC];
             Action action;
 

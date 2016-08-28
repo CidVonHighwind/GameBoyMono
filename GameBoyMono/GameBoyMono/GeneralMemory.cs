@@ -12,24 +12,35 @@ namespace GameBoyMono
 
         public byte this[int index]
         {
-            get { return _generalMemory[index]; }
+            get
+            {
+                if (index == 0xFF42) { }
+                return _generalMemory[index];
+            }
             set
             {
+                if (Game1.gbCPU.gameStarted && index < 0x7FFF)
+                {
+                    Game1.gbCPU.bugFound = true;
+                    return;
+                }
+
                 _generalMemory[index] = value;
 
+                if (index == 0xFF42 && value == 3)
+                {
+                }
+                if (index == 0xFF42) { }
                 // ToDo, need to take 160 microseconds
                 if (index == 0xFF46)
                 {
                     // DMA Transfer
                     for (int i = 0; i <= 0x9F; i++)
                     {
-                        _generalMemory[0xFE00 + i] = _generalMemory[value + i];
+                        _generalMemory[0xFE00 + i] = _generalMemory[(value << 8) + i];
                     }
                 }
-                if(Game1.gbCPU.gameStarted && index <= 0x7FFF)
-                {
-                    Game1.gbCPU.bugFound = true;
-                }
+
             }
         }
     }

@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.IO;
-using System.Threading;
 
 namespace GameBoyMono
 {
@@ -44,8 +43,8 @@ namespace GameBoyMono
 
         protected override void LoadContent()
         {
-            byte bt1 = 0xFB;
-            int b1 = 0x0C + (int)((sbyte)bt1);
+            byte bt1 = 0xFC;
+            int b1 = 0x297 + (sbyte)bt1;
             b1 = 0;
 
 
