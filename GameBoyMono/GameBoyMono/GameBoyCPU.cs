@@ -72,6 +72,8 @@ namespace GameBoyMono
 
         Timer gbTimer = new Timer();
 
+        int divCounter, timerCounter;
+
         byte[] cycleArray = new byte[] {    04,12,08,08,04,04,08,04,20,08,08,08,04,04,08,04,
                                             04,12,08,08,04,04,08,04,12,08,08,08,04,04,08,04,
                                             08,12,08,08,04,04,08,04,08,08,08,08,04,04,08,04,
@@ -88,7 +90,7 @@ namespace GameBoyMono
                                             08,12,12,00,12,16,08,16,08,16,12,00,12,00,08,16,
                                             12,12,08,00,00,16,08,16,16,04,16,00,00,00,08,16,
                                             12,12,08,04,00,16,08,16,12,08,16,04,00,00,08,16};
-        
+
         byte[] cycleCBArray = new byte[] {  08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
@@ -171,25 +173,106 @@ namespace GameBoyMono
 
         public void Update(GameTime gametime)
         {
-            while (cycleCount < maxCycles)
+            while (cycleCount + cycleArray[generalMemory[reg_PC]] < maxCycles)
             {
                 // update cycle count
                 cycleCount += cycleArray[generalMemory[reg_PC]];
-                
+
+
+                // set mode flag
+                // mode 2,3,0 cycle
+                int smallCycle = cycleCount % 456;
+
+                // cycle: 456 clks * 144
+                // 2: 77-84     (80)    read oam memory
+                // 3: 169-175   (171)   transf data to lcd
+                // 0: 201-207   (205)   H-Blank 
+                //
+                // 1:                   V-Blank
+                // 144*456(65.664) + 4560 = 70224
+                if (cycleCount >= 65664)
+                    generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x01);
+                else if (smallCycle < 80)
+                    generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x02);
+                else if (smallCycle < 251)
+                    generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x03);
+                else
+                    generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC));
+
 
                 byte oldLY = generalMemory[0xFF44];
                 // set the LY value
-                generalMemory[0xFF44] = (byte)(153 * (cycleCount / (float)maxCycles));
+                generalMemory[0xFF44] = (byte)(cycleCount / 456);
+
+                // v-blank flag
+                if (oldLY == 143 && generalMemory[0xFF44] == 144)
+                    generalMemory[0xFF0F] |= 0x01;  // set bit 0
+
+
+                // 16384Hz invrement:
+                // 16384 / 60 = 273
+                // 70224 / 273 = 257
+                divCounter += generalMemory[reg_PC];
+                if (divCounter > 257)
+                {
+                    divCounter -= 257;
+                    generalMemory.SetByte(0xFF04, (byte)(generalMemory[0xFF04] + 1));
+                }
+
+                // FF07 - TAC - Timer Control
+                // Bit  2     - Timer Stop  (0=Stop, 1=Start)
+                // Bits 1 - 0 - Input Clock Select
+                // Timer counter update
+                if ((generalMemory[0xFF07] & 0x04) == 0x04)
+                {
+                    timerCounter += generalMemory[reg_PC];
+
+                    int threshold = 0;
+                    // 00:   4096 Hz(~4194 Hz SGB)
+                    // 01: 262144 Hz(~268400 Hz SGB)
+                    // 10:  65536 Hz(~67110 Hz SGB)
+                    // 11:  16384 Hz(~16780 Hz SGB
+                    switch (generalMemory[reg_PC])
+                    {
+                        case 0: threshold = 64; break;
+                        case 1: threshold = 1; break;
+                        case 2: threshold = 4; break;
+                        case 3: threshold = 16; break;
+                    }
+                    // 262144 / 60 = 4369
+                    // 70224 / 4369 = 16
+                    if (timerCounter >= 16 * threshold)
+                    {
+                        timerCounter -= 16 * threshold;
+
+                        // timer interrupt
+                        if (generalMemory[0xFF05] == 0xFF)
+                        {
+                            // TIMA = TMA
+                            generalMemory[0xFF05] = generalMemory[0xFF06];
+
+                            // set the IF register
+                            generalMemory[0xFF0F] |= 0x04;
+                        }
+                        else
+                        {
+                            generalMemory[0xFF05]++;
+                        }
+
+                    }
+                }
+
+
+
+
+
 
                 // v-blank interrupt
-                if (oldLY == 143 && generalMemory[0xFF44] == 144)
-                {
-                    generalMemory[0xFF0F] |= 0x01;  // set bit 0
-                }
-                if (IME && (generalMemory[0xFFFF] & 0x01) == 0x01)
-                {
+                if (IME && (generalMemory[0xFFFF] & 0x01) == 0x01 && (generalMemory[0xFF0F] & 0x01) == 0x01)
                     VblankInterrupt();
-                }
+                // timer overflow interrupt
+                if (IME && (generalMemory[0xFFFF] & 0x04) == 0x04 && (generalMemory[0xFF0F] & 0x04) == 0x04)
+                    TimerInterrupt();
 
                 // set coincidence flag
                 if (generalMemory[0xFF44] == generalMemory[0xFF45]) //LY == LYC
@@ -202,29 +285,6 @@ namespace GameBoyMono
                 else
                     generalMemory[0xFF41] &= 0xFB;
 
-                // set mode flag
-                if (generalMemory[0xFF44] >= 144)
-                {
-                    generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x01);  // v-blank flag
-                }
-                else
-                {
-                    // mode 2,3,0 cycle
-                    int smallCycle = cycleCount % 456;
-
-                    // 2: 77-84     (80)    read oam memory
-                    // 3: 169-175   (171)   transf data to lcd
-                    // 0: 201-207   (205)   H-Blank 
-                    // cycle: 456 clks
-                    // 144*456 + 4560 = 70224
-                    if (smallCycle < 80)
-                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x02);
-                    if (smallCycle < 251)
-                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x03);
-                    else
-                        generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC));
-                }
-
                 // execute next instruction
                 nextInstruction();
 
@@ -236,6 +296,76 @@ namespace GameBoyMono
                 {
                     UnmountDMGRom();
                     gameStarted = true;
+
+                    // timer
+                    int gm1 = generalMemory[0xFF05];    //0x00;
+                    int gm2 = generalMemory[0xFF06];    //0x00;
+                    int gm3 = generalMemory[0xFF07];    //0x00;
+
+                    // sound stuff (not right)
+                    int gm4 = generalMemory[0xFF10];    //0x80;
+                    int gm5 = generalMemory[0xFF11];    //0xBF;
+                    int gm6 = generalMemory[0xFF12];    //0xF3;
+                    int gm7 = generalMemory[0xFF14];    //0xBF;
+                    int gm8 = generalMemory[0xFF16];    //0x3F;
+                    int gm9 = generalMemory[0xFF17];    //0x00;
+                    int gm10 = generalMemory[0xFF19];   //0xBF;
+                    int gm11 = generalMemory[0xFF1A];   //0x7F;
+                    int gm12 = generalMemory[0xFF1B];   //0xFF;
+                    int gm13 = generalMemory[0xFF1C];   //0x9F;
+                    int gm14 = generalMemory[0xFF1E];   //0xBF;
+                    int gm15 = generalMemory[0xFF20];   //0xFF;
+                    int gm16 = generalMemory[0xFF21];   //0x00;
+                    int gm17 = generalMemory[0xFF22];   //0x00;
+                    int gm18 = generalMemory[0xFF23];   //0xBF;
+                    int gm19 = generalMemory[0xFF24];   //0x77;
+                    int gm20 = generalMemory[0xFF25];   //0xF3;
+                    int gm21 = generalMemory[0xFF26];   //0xF1;
+
+                    int gm22 = generalMemory[0xFF40];   //0x91;
+                    int gm23 = generalMemory[0xFF42];   //0x00;
+                    int gm24 = generalMemory[0xFF43];   //0x00;
+                    int gm25 = generalMemory[0xFF45];   //0x00;
+                    int gm26 = generalMemory[0xFF47];   //0xFC;
+
+                    // color palett (not right)
+                    int gm27 = generalMemory[0xFF48];   //0xFF;
+                    int gm28 = generalMemory[0xFF49];   //0xFF;
+                    int gm29 = generalMemory[0xFF4A];   //0x00;
+                    int gm30 = generalMemory[0xFF4B];   //0x00;
+                    int gm31 = generalMemory[0xFFFF];   //0x00;
+
+                    //generalMemory[0xFF05] = 0x00;// TIMA
+                    //generalMemory[0xFF06] = 0x00;//TMA
+                    //generalMemory[0xFF07] = 0x00;//TAC
+                    //generalMemory[0xFF10] = 0x80;//NR10
+                    //generalMemory[0xFF11] = 0xBF;//NR11
+                    //generalMemory[0xFF12] = 0xF3;//NR12
+                    //generalMemory[0xFF14] = 0xBF;//NR14
+                    //generalMemory[0xFF16] = 0x3F;//NR21
+                    //generalMemory[0xFF17] = 0x00;//NR22
+                    //generalMemory[0xFF19] = 0xBF;//NR24
+                    //generalMemory[0xFF1A] = 0x7F;//NR30
+                    //generalMemory[0xFF1B] = 0xFF;//NR31
+                    //generalMemory[0xFF1C] = 0x9F;//NR32
+                    //generalMemory[0xFF1E] = 0xBF;//NR33
+                    //generalMemory[0xFF20] = 0xFF;//NR41
+                    //generalMemory[0xFF21] = 0x00;//NR42
+                    //generalMemory[0xFF22] = 0x00;//NR43
+                    //generalMemory[0xFF23] = 0xBF;//NR30
+                    //generalMemory[0xFF24] = 0x77;//NR50
+                    //generalMemory[0xFF25] = 0xF3;//NR51
+                    //generalMemory[0xFF26] = 0xF1; // GB, $F0 - SGB; NR52
+                    //generalMemory[0xFF40] = 0x91;//LCDC
+                    //generalMemory[0xFF42] = 0x00;//SCY
+                    //generalMemory[0xFF43] = 0x00;//SCX
+                    //generalMemory[0xFF45] = 0x00;//LYC
+                    //generalMemory[0xFF47] = 0xFC;//BGP
+                    //generalMemory[0xFF48] = 0xFF;//OBP0
+                    //generalMemory[0xFF49] = 0xFF;//OBP1
+                    //generalMemory[0xFF4A] = 0x00;//WY
+                    //generalMemory[0xFF4B] = 0x00;//WX
+                    //generalMemory[0xFFFF] = 0x00;//IE
                 }
             }
 
@@ -313,9 +443,19 @@ namespace GameBoyMono
             ExecuteInterrupt();
 
             // disable interrupt flag
-            generalMemory[0xFF0F] &= 0xFE;
+            generalMemory[0xFF0F] &= 0xFD;
             // jump to address
             reg_PC = 0x48;
+        }
+
+        public void TimerInterrupt()
+        {
+            ExecuteInterrupt();
+
+            // disable interrupt flag
+            generalMemory[0xFF0F] &= 0xFB;
+            // jump to address
+            reg_PC = 0x50;
         }
 
         /// <summary>

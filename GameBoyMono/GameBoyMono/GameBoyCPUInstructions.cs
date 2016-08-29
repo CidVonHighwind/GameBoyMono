@@ -40,6 +40,7 @@ namespace GameBoyMono
         public void LD_A_d8() { reg_A = data8; }
 
         // 4x
+        public void LD_B_A() { reg_B = reg_A; }
         public void LD_B_B() { }
         public void LD_B_C() { reg_B = reg_C; }
         public void LD_B_D() { reg_B = reg_D; }
@@ -47,8 +48,8 @@ namespace GameBoyMono
         public void LD_B_H() { reg_B = reg_H; }
         public void LD_B_L() { reg_B = reg_L; }
         public void LD_B_aHL() { reg_B = generalMemory[reg_HL]; }
-        public void LD_B_A() { reg_B = reg_A; }
 
+        public void LD_C_A() { reg_C = reg_A; }
         public void LD_C_B() { reg_C = reg_B; }
         public void LD_C_C() { }
         public void LD_C_D() { reg_C = reg_D; }
@@ -56,9 +57,9 @@ namespace GameBoyMono
         public void LD_C_H() { reg_C = reg_H; }
         public void LD_C_L() { reg_C = reg_L; }
         public void LD_C_aHL() { reg_C = generalMemory[reg_HL]; }
-        public void LD_C_A() { reg_C = reg_A; }
 
         // 5x
+        public void LD_D_A() { reg_D = reg_A; }
         public void LD_D_B() { reg_D = reg_B; }
         public void LD_D_C() { reg_D = reg_C; }
         public void LD_D_D() { }
@@ -66,8 +67,8 @@ namespace GameBoyMono
         public void LD_D_H() { reg_D = reg_H; }
         public void LD_D_L() { reg_D = reg_L; }
         public void LD_D_aHL() { reg_D = generalMemory[reg_HL]; }
-        public void LD_D_A() { reg_D = reg_A; }
 
+        public void LD_E_A() { reg_E = reg_A; }
         public void LD_E_B() { reg_E = reg_B; }
         public void LD_E_C() { reg_E = reg_C; }
         public void LD_E_D() { reg_E = reg_D; }
@@ -75,9 +76,9 @@ namespace GameBoyMono
         public void LD_E_H() { reg_E = reg_H; }
         public void LD_E_L() { reg_E = reg_L; }
         public void LD_E_aHL() { reg_E = generalMemory[reg_HL]; }
-        public void LD_E_A() { reg_E = reg_A; }
 
         // 6x
+        public void LD_H_A() { reg_H = reg_A; }
         public void LD_H_B() { reg_H = reg_B; }
         public void LD_H_C() { reg_H = reg_C; }
         public void LD_H_D() { reg_H = reg_D; }
@@ -85,8 +86,8 @@ namespace GameBoyMono
         public void LD_H_H() { }
         public void LD_H_L() { reg_H = reg_L; }
         public void LD_H_aHL() { reg_H = generalMemory[reg_HL]; }
-        public void LD_H_A() { reg_H = reg_A; }
 
+        public void LD_L_A() { reg_L = reg_A; }
         public void LD_L_B() { reg_L = reg_B; }
         public void LD_L_C() { reg_L = reg_C; }
         public void LD_L_D() { reg_L = reg_D; }
@@ -94,17 +95,17 @@ namespace GameBoyMono
         public void LD_L_H() { reg_L = reg_H; }
         public void LD_L_L() { }
         public void LD_L_aHL() { reg_L = generalMemory[reg_HL]; }
-        public void LD_L_A() { reg_L = reg_A; }
 
         // 7x
+        public void LD_aHL_A() { generalMemory[reg_HL] = reg_A; }
         public void LD_aHL_B() { generalMemory[reg_HL] = reg_B; }
         public void LD_aHL_C() { generalMemory[reg_HL] = reg_C; }
         public void LD_aHL_D() { generalMemory[reg_HL] = reg_D; }
         public void LD_aHL_E() { generalMemory[reg_HL] = reg_E; }
         public void LD_aHL_H() { generalMemory[reg_HL] = reg_H; }
         public void LD_aHL_L() { generalMemory[reg_HL] = reg_L; }
-        public void LD_aHL_A() { generalMemory[reg_HL] = reg_A; }
 
+        public void LD_A_A() { }
         public void LD_A_B() { reg_A = reg_B; }
         public void LD_A_C() { reg_A = reg_C; }
         public void LD_A_D() { reg_A = reg_D; }
@@ -112,7 +113,6 @@ namespace GameBoyMono
         public void LD_A_H() { reg_A = reg_H; }
         public void LD_A_L() { reg_A = reg_L; }
         public void LD_A_aHL() { reg_A = generalMemory[reg_HL]; }
-        public void LD_A_A() { }
 
         // Ex
         public void LDH_a8_A() { generalMemory[0xFF00 + data8] = reg_A; }
@@ -125,16 +125,17 @@ namespace GameBoyMono
 
         // LD 16bit
         public void LD_BC_d16() { reg_BC = data16; }
-        public void LD_a16_SP() { generalMemory[data16] = (byte)(reg_SP & 0xFF); generalMemory[data16 + 1] = (byte)(reg_SP >> 8); }
         public void LD_DE_d16() { reg_DE = data16; }
         public void LD_HL_d16() { reg_HL = data16; }
         public void LD_SP_d16() { reg_SP = data16; }
+        public void LD_a16_SP() { generalMemory[data16] = (byte)(reg_SP & 0xFF); generalMemory[data16 + 1] = (byte)(reg_SP >> 8); }
 
 
         public void LD_HL_SPr8() { reg_HL = (ushort)(reg_SP + (sbyte)data8); }
         public void LD_SP_HL() { reg_SP = reg_HL; }
 
         // INC 8bit
+        public void INC_A() { reg_A++; flag_Z = (reg_A == 0x00); flag_N = false; flag_H = ((reg_A & 0x1F) == 0x10); }
         public void INC_B() { reg_B++; flag_Z = (reg_B == 0x00); flag_N = false; flag_H = ((reg_B & 0x1F) == 0x10); }
         public void INC_C() { reg_C++; flag_Z = (reg_C == 0x00); flag_N = false; flag_H = ((reg_C & 0x1F) == 0x10); }
         public void INC_D() { reg_D++; flag_Z = (reg_D == 0x00); flag_N = false; flag_H = ((reg_D & 0x1F) == 0x10); }
@@ -142,7 +143,6 @@ namespace GameBoyMono
         public void INC_H() { reg_H++; flag_Z = (reg_H == 0x00); flag_N = false; flag_H = ((reg_H & 0x1F) == 0x10); }
         public void INC_L() { reg_L++; flag_Z = (reg_L == 0x00); flag_N = false; flag_H = ((reg_L & 0x1F) == 0x10); }
         public void INC_aHL() { generalMemory[reg_HL]++; flag_Z = (generalMemory[reg_HL] == 0x00); flag_N = false; flag_H = ((generalMemory[reg_HL] & 0x1F) == 0x10); }
-        public void INC_A() { reg_A++; flag_Z = (reg_A == 0x00); flag_N = false; flag_H = ((reg_A & 0x1F) == 0x10); }
 
         // INC 16bit
         public void INC_BC() { reg_BC++; }
@@ -151,14 +151,14 @@ namespace GameBoyMono
         public void INC_SP() { reg_SP++; }
 
         // DEC 8bit todo flag h right?
+        public void DEC_A() { reg_A--; flag_Z = (reg_A == 0x00); flag_N = true; flag_H = ((reg_A & 0x0F) == 0x0F); }
         public void DEC_B() { reg_B--; flag_Z = (reg_B == 0x00); flag_N = true; flag_H = ((reg_B & 0x0F) == 0x0F); }
         public void DEC_D() { reg_D--; flag_Z = (reg_D == 0x00); flag_N = true; flag_H = ((reg_D & 0x0F) == 0x0F); }
         public void DEC_H() { reg_H--; flag_Z = (reg_H == 0x00); flag_N = true; flag_H = ((reg_H & 0x0F) == 0x0F); }
-        public void DEC_aHL() { generalMemory[reg_HL]--; flag_Z = (generalMemory[reg_HL] == 0x00); flag_N = true; flag_H = ((generalMemory[reg_HL] & 0x0F) == 0x0F); }
         public void DEC_C() { reg_C--; flag_Z = (reg_C == 0x00); flag_N = true; flag_H = ((reg_C & 0x0F) == 0x0F); }
         public void DEC_E() { reg_E--; flag_Z = (reg_E == 0x00); flag_N = true; flag_H = ((reg_E & 0x0F) == 0x0F); }
         public void DEC_L() { reg_L--; flag_Z = (reg_L == 0x00); flag_N = true; flag_H = ((reg_L & 0x0F) == 0x0F); }
-        public void DEC_A() { reg_A--; flag_Z = (reg_A == 0x00); flag_N = true; flag_H = ((reg_A & 0x0F) == 0x0F); }
+        public void DEC_aHL() { generalMemory[reg_HL]--; flag_Z = (generalMemory[reg_HL] == 0x00); flag_N = true; flag_H = ((generalMemory[reg_HL] & 0x0F) == 0x0F); }
 
         // DEC 16bit
         public void DEC_BC() { reg_BC--; }
@@ -167,19 +167,19 @@ namespace GameBoyMono
         public void DEC_SP() { reg_SP--; }
 
         // ADD/ADC 8bit
+        public void ADD_A_A() { flag_H = ((reg_A & 0x0F) + (reg_A & 0x0F)) > 0x0F; flag_C = (reg_A + reg_A) > 0xFF; reg_A += reg_A; flag_Z = reg_A == 0x00; flag_N = false; }
         public void ADD_A_B() { flag_H = ((reg_A & 0x0F) + (reg_B & 0x0F)) > 0x0F; flag_C = (reg_A + reg_B) > 0xFF; reg_A += reg_B; flag_Z = reg_A == 0x00; flag_N = false; }
         public void ADD_A_C() { flag_H = ((reg_A & 0x0F) + (reg_C & 0x0F)) > 0x0F; flag_C = (reg_A + reg_C) > 0xFF; reg_A += reg_C; flag_Z = reg_A == 0x00; flag_N = false; }
         public void ADD_A_D() { flag_H = ((reg_A & 0x0F) + (reg_D & 0x0F)) > 0x0F; flag_C = (reg_A + reg_D) > 0xFF; reg_A += reg_D; flag_Z = reg_A == 0x00; flag_N = false; }
         public void ADD_A_E() { flag_H = ((reg_A & 0x0F) + (reg_E & 0x0F)) > 0x0F; flag_C = (reg_A + reg_E) > 0xFF; reg_A += reg_E; flag_Z = reg_A == 0x00; flag_N = false; }
         public void ADD_A_H() { flag_H = ((reg_A & 0x0F) + (reg_H & 0x0F)) > 0x0F; flag_C = (reg_A + reg_H) > 0xFF; reg_A += reg_H; flag_Z = reg_A == 0x00; flag_N = false; }
         public void ADD_A_L() { flag_H = ((reg_A & 0x0F) + (reg_L & 0x0F)) > 0x0F; flag_C = (reg_A + reg_L) > 0xFF; reg_A += reg_L; flag_Z = reg_A == 0x00; flag_N = false; }
+        public void ADD_A_d8() { flag_H = ((reg_A & 0x0F) + (data8 & 0x0F)) > 0x0F; flag_C = (reg_A + data8) > 0xFF; reg_A += data8; flag_Z = reg_A == 0x00; flag_N = false; }
         public void ADD_A_aHL()
         {
             flag_H = ((reg_A & 0x0F) + (generalMemory[reg_HL] & 0x0F)) > 0x0F;
             flag_C = (reg_A + generalMemory[reg_HL]) > 0xFF; reg_A += generalMemory[reg_HL]; flag_Z = reg_A == 0x00; flag_N = false;
         }
-        public void ADD_A_A() { flag_H = ((reg_A & 0x0F) + (reg_A & 0x0F)) > 0x0F; flag_C = (reg_A + reg_A) > 0xFF; reg_A += reg_A; flag_Z = reg_A == 0x00; flag_N = false; }
-        public void ADD_A_d8() { flag_H = ((reg_A & 0x0F) + (data8 & 0x0F)) > 0x0F; flag_C = (reg_A + data8) > 0xFF; reg_A += data8; flag_Z = reg_A == 0x00; flag_N = false; }
 
         // maybe
         public void ADD_SP_r8()
@@ -189,7 +189,13 @@ namespace GameBoyMono
         }
 
 
-        // ADC
+        // ADC todo: make it nicer
+        public void ADC_A_A()
+        {
+            temp = reg_A + reg_A + (flag_C ? 1 : 0);
+            flag_H = ((reg_A & 0x0F) + (reg_A & 0x0F) + (flag_C ? 0x01 : 0x00)) > 0x0F; flag_C = temp > 0xFF;
+            reg_A = (byte)temp; flag_Z = reg_A == 0x00; flag_N = false;
+        }
         public void ADC_A_B()
         {
             temp = reg_A + reg_B + (flag_C ? 1 : 0);
@@ -226,22 +232,16 @@ namespace GameBoyMono
             flag_H = ((reg_A & 0x0F) + (reg_L & 0x0F) + (flag_C ? 0x01 : 0x00)) > 0x0F; flag_C = temp > 0xFF;
             reg_A = (byte)temp; flag_Z = reg_A == 0x00; flag_N = false;
         }
-        public void ADC_A_aHL()
-        {
-            temp = reg_A + generalMemory[reg_HL] + (flag_C ? 1 : 0);
-            flag_H = ((reg_A & 0x0F) + (generalMemory[reg_HL] & 0x0F) + (flag_C ? 0x01 : 0x00)) > 0x0F; flag_C = temp > 0xFF;
-            reg_A = (byte)temp; flag_Z = reg_A == 0x00; flag_N = false;
-        }
-        public void ADC_A_A()
-        {
-            temp = reg_A + reg_A + (flag_C ? 1 : 0);
-            flag_H = ((reg_A & 0x0F) + (reg_A & 0x0F) + (flag_C ? 0x01 : 0x00)) > 0x0F; flag_C = temp > 0xFF;
-            reg_A = (byte)temp; flag_Z = reg_A == 0x00; flag_N = false;
-        }
         public void ADC_A_d8()
         {
             temp = reg_A + data8 + (flag_C ? 1 : 0);
             flag_H = ((reg_A & 0x0F) + (data8 & 0x0F) + (flag_C ? 0x01 : 0x00)) > 0x0F; flag_C = temp > 0xFF;
+            reg_A = (byte)temp; flag_Z = reg_A == 0x00; flag_N = false;
+        }
+        public void ADC_A_aHL()
+        {
+            temp = reg_A + generalMemory[reg_HL] + (flag_C ? 1 : 0);
+            flag_H = ((reg_A & 0x0F) + (generalMemory[reg_HL] & 0x0F) + (flag_C ? 0x01 : 0x00)) > 0x0F; flag_C = temp > 0xFF;
             reg_A = (byte)temp; flag_Z = reg_A == 0x00; flag_N = false;
         }
 
@@ -381,14 +381,14 @@ namespace GameBoyMono
         public void CALL_C_a16() { if (flag_C) CALL_a16(); }
 
         // RST - Restart
-        public void RST_08H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x08; }
-        public void RST_00H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x00; }
-        public void RST_10H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x10; }
-        public void RST_18H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x18; }
-        public void RST_20H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x20; }
-        public void RST_28H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x28; }
-        public void RST_30H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x30; }
-        public void RST_38H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x38; }
+        public void RST_00H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x0000; }
+        public void RST_08H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x0008; }
+        public void RST_10H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x0010; }
+        public void RST_18H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x0018; }
+        public void RST_20H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x0020; }
+        public void RST_28H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x0028; }
+        public void RST_30H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x0030; }
+        public void RST_38H() { generalMemory[--reg_SP] = (byte)(reg_PC >> 8); generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF); reg_PC = 0x0038; }
 
         // CB instructions
         // RLC
@@ -406,6 +406,7 @@ namespace GameBoyMono
         public void RLC_A() { flag_C = (reg_A & 0x80) == 0x80; reg_A = (byte)(reg_A << 1); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
 
         // RRC
+        public void RRC_A() { flag_C = (reg_A & 0x01) == 0x01; reg_A = (byte)(reg_A >> 1); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
         public void RRC_B() { flag_C = (reg_B & 0x01) == 0x01; reg_B = (byte)(reg_B >> 1); flag_Z = reg_B == 0x00; flag_N = false; flag_H = false; }
         public void RRC_C() { flag_C = (reg_C & 0x01) == 0x01; reg_C = (byte)(reg_C >> 1); flag_Z = reg_C == 0x00; flag_N = false; flag_H = false; }
         public void RRC_D() { flag_C = (reg_D & 0x01) == 0x01; reg_D = (byte)(reg_D >> 1); flag_Z = reg_D == 0x00; flag_N = false; flag_H = false; }
@@ -417,9 +418,9 @@ namespace GameBoyMono
             flag_C = (generalMemory[reg_HL] & 0x01) == 0x01;
             generalMemory[reg_HL] = (byte)(generalMemory[reg_HL] >> 1); flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false;
         }
-        public void RRC_A() { flag_C = (reg_A & 0x01) == 0x01; reg_A = (byte)(reg_A >> 1); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
 
         // RL
+        public void RL_A() { temp = reg_A; reg_A = (byte)((reg_A << 1) | (flag_C ? 1 : 0)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x80) == 0x80; }
         public void RL_B() { temp = reg_B; reg_B = (byte)((reg_B << 1) | (flag_C ? 1 : 0)); flag_Z = reg_B == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x80) == 0x80; }
         public void RL_C() { temp = reg_C; reg_C = (byte)((reg_C << 1) | (flag_C ? 1 : 0)); flag_Z = reg_C == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x80) == 0x80; }
         public void RL_D() { temp = reg_D; reg_D = (byte)((reg_D << 1) | (flag_C ? 1 : 0)); flag_Z = reg_D == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x80) == 0x80; }
@@ -429,11 +430,11 @@ namespace GameBoyMono
         public void RL_aHL()
         {
             temp = generalMemory[reg_HL]; generalMemory[reg_HL] = (byte)((generalMemory[reg_HL] << 1) | (flag_C ? 1 : 0));
-            flag_C = (temp & 0x80) == 0x80; flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false;
+            flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x80) == 0x80;
         }
-        public void RL_A() { temp = reg_A; reg_A = (byte)((reg_A << 1) | (flag_C ? 1 : 0)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x80) == 0x80; }
 
         // RR
+        public void RR_A() { temp = reg_A; reg_A = (byte)((reg_A >> 1) | (flag_C ? 0x80 : 0)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x01) == 0x01; }
         public void RR_B() { temp = reg_B; reg_B = (byte)((reg_B >> 1) | (flag_C ? 0x80 : 0)); flag_Z = reg_B == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x01) == 0x01; }
         public void RR_C() { temp = reg_C; reg_C = (byte)((reg_C >> 1) | (flag_C ? 0x80 : 0)); flag_Z = reg_C == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x01) == 0x01; }
         public void RR_D() { temp = reg_D; reg_D = (byte)((reg_D >> 1) | (flag_C ? 0x80 : 0)); flag_Z = reg_D == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x01) == 0x01; }
@@ -445,9 +446,9 @@ namespace GameBoyMono
             temp = generalMemory[reg_HL]; generalMemory[reg_HL] = (byte)((generalMemory[reg_HL] >> 1) | (flag_C ? 0x80 : 0));
             flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x01) == 0x01;
         }
-        public void RR_A() { temp = reg_A; reg_A = (byte)((reg_A >> 1) | (flag_C ? 0x80 : 0)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = (temp & 0x01) == 0x01; }
 
         // SLA
+        public void SLA_A() { flag_C = (reg_A & 0x80) == 0x80; reg_A = (byte)(reg_A << 1); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
         public void SLA_B() { flag_C = (reg_B & 0x80) == 0x80; reg_B = (byte)(reg_B << 1); flag_Z = reg_B == 0x00; flag_N = false; flag_H = false; }
         public void SLA_C() { flag_C = (reg_C & 0x80) == 0x80; reg_C = (byte)(reg_C << 1); flag_Z = reg_C == 0x00; flag_N = false; flag_H = false; }
         public void SLA_D() { flag_C = (reg_D & 0x80) == 0x80; reg_D = (byte)(reg_D << 1); flag_Z = reg_D == 0x00; flag_N = false; flag_H = false; }
@@ -459,9 +460,9 @@ namespace GameBoyMono
             flag_C = (generalMemory[reg_HL] & 0x80) == 0x80; generalMemory[reg_HL] = (byte)(generalMemory[reg_HL] << 1);
             flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false;
         }
-        public void SLA_A() { flag_C = (reg_A & 0x80) == 0x80; reg_A = (byte)(reg_A << 1); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
 
         // SRA
+        public void SRA_A() { flag_C = (reg_A & 0x01) == 0x01; reg_A = (byte)((reg_A >> 1) | (reg_A & 0x80)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
         public void SRA_B() { flag_C = (reg_B & 0x01) == 0x01; reg_B = (byte)((reg_B >> 1) | (reg_B & 0x80)); flag_Z = reg_B == 0x00; flag_N = false; flag_H = false; }
         public void SRA_C() { flag_C = (reg_C & 0x01) == 0x01; reg_C = (byte)((reg_C >> 1) | (reg_C & 0x80)); flag_Z = reg_C == 0x00; flag_N = false; flag_H = false; }
         public void SRA_D() { flag_C = (reg_D & 0x01) == 0x01; reg_D = (byte)((reg_D >> 1) | (reg_D & 0x80)); flag_Z = reg_D == 0x00; flag_N = false; flag_H = false; }
@@ -474,9 +475,9 @@ namespace GameBoyMono
             generalMemory[reg_HL] = (byte)((generalMemory[reg_HL] >> 1) | (generalMemory[reg_HL] & 0x80));
             flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false;
         }
-        public void SRA_A() { flag_C = (reg_A & 0x01) == 0x01; reg_A = (byte)((reg_A >> 1) | (reg_A & 0x80)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
 
         // SWAP
+        public void SWAP_A() { reg_A = (byte)((reg_A >> 4) | (reg_A << 4)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = false; }
         public void SWAP_B() { reg_B = (byte)((reg_B >> 4) | (reg_B << 4)); flag_Z = reg_B == 0x00; flag_N = false; flag_H = false; flag_C = false; }
         public void SWAP_C() { reg_C = (byte)((reg_C >> 4) | (reg_C << 4)); flag_Z = reg_C == 0x00; flag_N = false; flag_H = false; flag_C = false; }
         public void SWAP_D() { reg_D = (byte)((reg_D >> 4) | (reg_D << 4)); flag_Z = reg_D == 0x00; flag_N = false; flag_H = false; flag_C = false; }
@@ -488,9 +489,9 @@ namespace GameBoyMono
             generalMemory[reg_HL] = (byte)((generalMemory[reg_HL] >> 4) | (generalMemory[reg_HL] << 4));
             flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false; flag_C = false;
         }
-        public void SWAP_A() { reg_A = (byte)((reg_A >> 4) | (reg_A << 4)); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = false; }
 
         // SRL
+        public void SRL_A() { flag_C = (reg_A & 0x01) == 0x01; reg_A = (byte)(reg_A >> 1); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
         public void SRL_B() { flag_C = (reg_B & 0x01) == 0x01; reg_B = (byte)(reg_B >> 1); flag_Z = reg_B == 0x00; flag_N = false; flag_H = false; }
         public void SRL_C() { flag_C = (reg_C & 0x01) == 0x01; reg_C = (byte)(reg_C >> 1); flag_Z = reg_C == 0x00; flag_N = false; flag_H = false; }
         public void SRL_D() { flag_C = (reg_D & 0x01) == 0x01; reg_D = (byte)(reg_D >> 1); flag_Z = reg_D == 0x00; flag_N = false; flag_H = false; }
@@ -502,9 +503,9 @@ namespace GameBoyMono
             flag_C = (generalMemory[reg_HL] & 0x01) == 0x01; generalMemory[reg_HL] = (byte)(generalMemory[reg_HL] >> 1);
             flag_Z = generalMemory[reg_HL] == 0x00; flag_N = false; flag_H = false;
         }
-        public void SRL_A() { flag_C = (reg_A & 0x01) == 0x01; reg_A = (byte)(reg_A >> 1); flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; }
 
         // RES
+        public void RES_0_A() { reg_A &= 0xFE; }
         public void RES_0_B() { reg_B &= 0xFE; }
         public void RES_0_C() { reg_C &= 0xFE; }
         public void RES_0_D() { reg_D &= 0xFE; }
@@ -512,8 +513,8 @@ namespace GameBoyMono
         public void RES_0_H() { reg_H &= 0xFE; }
         public void RES_0_L() { reg_L &= 0xFE; }
         public void RES_0_aHL() { generalMemory[reg_HL] &= 0xFE; }
-        public void RES_0_A() { reg_A &= 0xFE; }
 
+        public void RES_1_A() { reg_A &= 0xFD; }
         public void RES_1_B() { reg_B &= 0xFD; }
         public void RES_1_C() { reg_C &= 0xFD; }
         public void RES_1_D() { reg_D &= 0xFD; }
@@ -521,8 +522,8 @@ namespace GameBoyMono
         public void RES_1_H() { reg_H &= 0xFD; }
         public void RES_1_L() { reg_L &= 0xFD; }
         public void RES_1_aHL() { generalMemory[reg_HL] &= 0xFD; }
-        public void RES_1_A() { reg_A &= 0xFD; }
 
+        public void RES_2_A() { reg_A &= 0xFB; }
         public void RES_2_B() { reg_B &= 0xFB; }
         public void RES_2_C() { reg_C &= 0xFB; }
         public void RES_2_D() { reg_D &= 0xFB; }
@@ -530,8 +531,8 @@ namespace GameBoyMono
         public void RES_2_H() { reg_H &= 0xFB; }
         public void RES_2_L() { reg_L &= 0xFB; }
         public void RES_2_aHL() { generalMemory[reg_HL] &= 0xFB; }
-        public void RES_2_A() { reg_A &= 0xFB; }
 
+        public void RES_3_A() { reg_A &= 0xF7; }
         public void RES_3_B() { reg_B &= 0xF7; }
         public void RES_3_C() { reg_C &= 0xF7; }
         public void RES_3_D() { reg_D &= 0xF7; }
@@ -539,8 +540,8 @@ namespace GameBoyMono
         public void RES_3_H() { reg_H &= 0xF7; }
         public void RES_3_L() { reg_L &= 0xF7; }
         public void RES_3_aHL() { generalMemory[reg_HL] &= 0xF7; }
-        public void RES_3_A() { reg_A &= 0xF7; }
 
+        public void RES_4_A() { reg_A &= 0xEF; }
         public void RES_4_B() { reg_B &= 0xEF; }
         public void RES_4_C() { reg_C &= 0xEF; }
         public void RES_4_D() { reg_D &= 0xEF; }
@@ -548,8 +549,8 @@ namespace GameBoyMono
         public void RES_4_H() { reg_H &= 0xEF; }
         public void RES_4_L() { reg_L &= 0xEF; }
         public void RES_4_aHL() { generalMemory[reg_HL] &= 0xEF; }
-        public void RES_4_A() { reg_A &= 0xEF; }
 
+        public void RES_5_A() { reg_A &= 0xDF; }
         public void RES_5_B() { reg_B &= 0xDF; }
         public void RES_5_C() { reg_C &= 0xDF; }
         public void RES_5_D() { reg_D &= 0xDF; }
@@ -557,8 +558,8 @@ namespace GameBoyMono
         public void RES_5_H() { reg_H &= 0xDF; }
         public void RES_5_L() { reg_L &= 0xDF; }
         public void RES_5_aHL() { generalMemory[reg_HL] &= 0xDF; }
-        public void RES_5_A() { reg_A &= 0xDF; }
 
+        public void RES_6_A() { reg_A &= 0xBF; }
         public void RES_6_B() { reg_B &= 0xBF; }
         public void RES_6_C() { reg_C &= 0xBF; }
         public void RES_6_D() { reg_D &= 0xBF; }
@@ -566,8 +567,8 @@ namespace GameBoyMono
         public void RES_6_H() { reg_H &= 0xBF; }
         public void RES_6_L() { reg_L &= 0xBF; }
         public void RES_6_aHL() { generalMemory[reg_HL] &= 0xBF; }
-        public void RES_6_A() { reg_A &= 0xBF; }
 
+        public void RES_7_A() { reg_A &= 0x7F; }
         public void RES_7_B() { reg_B &= 0x7F; }
         public void RES_7_C() { reg_C &= 0x7F; }
         public void RES_7_D() { reg_D &= 0x7F; }
@@ -575,9 +576,9 @@ namespace GameBoyMono
         public void RES_7_H() { reg_H &= 0x7F; }
         public void RES_7_L() { reg_L &= 0x7F; }
         public void RES_7_aHL() { generalMemory[reg_HL] &= 0x7F; }
-        public void RES_7_A() { reg_A &= 0x7F; }
 
         // SET
+        public void SET_0_A() { reg_A |= 0x01; }
         public void SET_0_B() { reg_B |= 0x01; }
         public void SET_0_C() { reg_C |= 0x01; }
         public void SET_0_D() { reg_D |= 0x01; }
@@ -585,8 +586,8 @@ namespace GameBoyMono
         public void SET_0_H() { reg_H |= 0x01; }
         public void SET_0_L() { reg_L |= 0x01; }
         public void SET_0_aHL() { generalMemory[reg_HL] |= 0x01; }
-        public void SET_0_A() { reg_A |= 0x01; }
 
+        public void SET_1_A() { reg_A |= 0x02; }
         public void SET_1_B() { reg_B |= 0x02; }
         public void SET_1_C() { reg_C |= 0x02; }
         public void SET_1_D() { reg_D |= 0x02; }
@@ -594,8 +595,8 @@ namespace GameBoyMono
         public void SET_1_H() { reg_H |= 0x02; }
         public void SET_1_L() { reg_L |= 0x02; }
         public void SET_1_aHL() { generalMemory[reg_HL] |= 0x02; }
-        public void SET_1_A() { reg_A |= 0x02; }
 
+        public void SET_2_A() { reg_A |= 0x04; }
         public void SET_2_B() { reg_B |= 0x04; }
         public void SET_2_C() { reg_C |= 0x04; }
         public void SET_2_D() { reg_D |= 0x04; }
@@ -603,8 +604,8 @@ namespace GameBoyMono
         public void SET_2_H() { reg_H |= 0x04; }
         public void SET_2_L() { reg_L |= 0x04; }
         public void SET_2_aHL() { generalMemory[reg_HL] |= 0x04; }
-        public void SET_2_A() { reg_A |= 0x04; }
 
+        public void SET_3_A() { reg_A |= 0x08; }
         public void SET_3_B() { reg_B |= 0x08; }
         public void SET_3_C() { reg_C |= 0x08; }
         public void SET_3_D() { reg_D |= 0x08; }
@@ -612,8 +613,8 @@ namespace GameBoyMono
         public void SET_3_H() { reg_H |= 0x08; }
         public void SET_3_L() { reg_L |= 0x08; }
         public void SET_3_aHL() { generalMemory[reg_HL] |= 0x08; }
-        public void SET_3_A() { reg_A |= 0x08; }
 
+        public void SET_4_A() { reg_A |= 0x10; }
         public void SET_4_B() { reg_B |= 0x10; }
         public void SET_4_C() { reg_C |= 0x10; }
         public void SET_4_D() { reg_D |= 0x10; }
@@ -621,8 +622,8 @@ namespace GameBoyMono
         public void SET_4_H() { reg_H |= 0x10; }
         public void SET_4_L() { reg_L |= 0x10; }
         public void SET_4_aHL() { generalMemory[reg_HL] |= 0x10; }
-        public void SET_4_A() { reg_A |= 0x10; }
 
+        public void SET_5_A() { reg_A |= 0x20; }
         public void SET_5_B() { reg_B |= 0x20; }
         public void SET_5_C() { reg_C |= 0x20; }
         public void SET_5_D() { reg_D |= 0x20; }
@@ -630,8 +631,8 @@ namespace GameBoyMono
         public void SET_5_H() { reg_H |= 0x20; }
         public void SET_5_L() { reg_L |= 0x20; }
         public void SET_5_aHL() { generalMemory[reg_HL] |= 0x20; }
-        public void SET_5_A() { reg_A |= 0x20; }
 
+        public void SET_6_A() { reg_A |= 0x40; }
         public void SET_6_B() { reg_B |= 0x40; }
         public void SET_6_C() { reg_C |= 0x40; }
         public void SET_6_D() { reg_D |= 0x40; }
@@ -639,8 +640,8 @@ namespace GameBoyMono
         public void SET_6_H() { reg_H |= 0x40; }
         public void SET_6_L() { reg_L |= 0x40; }
         public void SET_6_aHL() { generalMemory[reg_HL] |= 0x40; }
-        public void SET_6_A() { reg_A |= 0x40; }
 
+        public void SET_7_A() { reg_A |= 0x80; }
         public void SET_7_B() { reg_B |= 0x80; }
         public void SET_7_C() { reg_C |= 0x80; }
         public void SET_7_D() { reg_D |= 0x80; }
@@ -648,80 +649,78 @@ namespace GameBoyMono
         public void SET_7_H() { reg_H |= 0x80; }
         public void SET_7_L() { reg_L |= 0x80; }
         public void SET_7_aHL() { generalMemory[reg_HL] |= 0x80; }
-        public void SET_7_A() { reg_A |= 0x80; }
 
         // BIT
-        // redo without ! and with == 0
-        public void BIT_0_B() { flag_Z = !((reg_B & 0x01) == 0x01); flag_N = false; flag_H = true; }
-        public void BIT_0_C() { flag_Z = !((reg_C & 0x01) == 0x01); flag_N = false; flag_H = true; }
-        public void BIT_0_D() { flag_Z = !((reg_D & 0x01) == 0x01); flag_N = false; flag_H = true; }
-        public void BIT_0_E() { flag_Z = !((reg_E & 0x01) == 0x01); flag_N = false; flag_H = true; }
-        public void BIT_0_H() { flag_Z = !((reg_H & 0x01) == 0x01); flag_N = false; flag_H = true; }
-        public void BIT_0_L() { flag_Z = !((reg_L & 0x01) == 0x01); flag_N = false; flag_H = true; }
-        public void BIT_0_aHL() { flag_Z = !((generalMemory[reg_HL] & 0x01) == 0x01); flag_N = false; flag_H = true; }
-        public void BIT_0_A() { flag_Z = !((reg_A & 0x01) == 0x01); flag_N = false; flag_H = true; }
+        public void BIT_0_A() { flag_Z = (reg_A & 0x01) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_0_B() { flag_Z = (reg_B & 0x01) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_0_C() { flag_Z = (reg_C & 0x01) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_0_D() { flag_Z = (reg_D & 0x01) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_0_E() { flag_Z = (reg_E & 0x01) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_0_H() { flag_Z = (reg_H & 0x01) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_0_L() { flag_Z = (reg_L & 0x01) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_0_aHL() { flag_Z = (generalMemory[reg_HL] & 0x01) == 0x00; flag_N = false; flag_H = true; }
 
-        public void BIT_1_B() { flag_Z = !((reg_B & 0x02) == 0x02); flag_N = false; flag_H = true; }
-        public void BIT_1_C() { flag_Z = !((reg_C & 0x02) == 0x02); flag_N = false; flag_H = true; }
-        public void BIT_1_D() { flag_Z = !((reg_D & 0x02) == 0x02); flag_N = false; flag_H = true; }
-        public void BIT_1_E() { flag_Z = !((reg_E & 0x02) == 0x02); flag_N = false; flag_H = true; }
-        public void BIT_1_H() { flag_Z = !((reg_H & 0x02) == 0x02); flag_N = false; flag_H = true; }
-        public void BIT_1_L() { flag_Z = !((reg_L & 0x02) == 0x02); flag_N = false; flag_H = true; }
-        public void BIT_1_aHL() { flag_Z = !((generalMemory[reg_HL] & 0x02) == 0x02); flag_N = false; flag_H = true; }
-        public void BIT_1_A() { flag_Z = !((reg_A & 0x02) == 0x02); flag_N = false; flag_H = true; }
+        public void BIT_1_A() { flag_Z = (reg_A & 0x02) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_1_B() { flag_Z = (reg_B & 0x02) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_1_C() { flag_Z = (reg_C & 0x02) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_1_D() { flag_Z = (reg_D & 0x02) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_1_E() { flag_Z = (reg_E & 0x02) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_1_H() { flag_Z = (reg_H & 0x02) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_1_L() { flag_Z = (reg_L & 0x02) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_1_aHL() { flag_Z = (generalMemory[reg_HL] & 0x02) == 0x00; flag_N = false; flag_H = true; }
 
-        public void BIT_2_B() { flag_Z = !((reg_B & 0x04) == 0x04); flag_N = false; flag_H = true; }
-        public void BIT_2_C() { flag_Z = !((reg_C & 0x04) == 0x04); flag_N = false; flag_H = true; }
-        public void BIT_2_D() { flag_Z = !((reg_D & 0x04) == 0x04); flag_N = false; flag_H = true; }
-        public void BIT_2_E() { flag_Z = !((reg_E & 0x04) == 0x04); flag_N = false; flag_H = true; }
-        public void BIT_2_H() { flag_Z = !((reg_H & 0x04) == 0x04); flag_N = false; flag_H = true; }
-        public void BIT_2_L() { flag_Z = !((reg_L & 0x04) == 0x04); flag_N = false; flag_H = true; }
-        public void BIT_2_aHL() { flag_Z = !((generalMemory[reg_HL] & 0x04) == 0x04); flag_N = false; flag_H = true; }
-        public void BIT_2_A() { flag_Z = !((reg_A & 0x04) == 0x04); flag_N = false; flag_H = true; }
+        public void BIT_2_A() { flag_Z = (reg_A & 0x04) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_2_B() { flag_Z = (reg_B & 0x04) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_2_C() { flag_Z = (reg_C & 0x04) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_2_D() { flag_Z = (reg_D & 0x04) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_2_E() { flag_Z = (reg_E & 0x04) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_2_H() { flag_Z = (reg_H & 0x04) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_2_L() { flag_Z = (reg_L & 0x04) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_2_aHL() { flag_Z = (generalMemory[reg_HL] & 0x04) == 0x00; flag_N = false; flag_H = true; }
 
-        public void BIT_3_B() { flag_Z = !((reg_B & 0x08) == 0x08); flag_N = false; flag_H = true; }
-        public void BIT_3_C() { flag_Z = !((reg_C & 0x08) == 0x08); flag_N = false; flag_H = true; }
-        public void BIT_3_D() { flag_Z = !((reg_D & 0x08) == 0x08); flag_N = false; flag_H = true; }
-        public void BIT_3_E() { flag_Z = !((reg_E & 0x08) == 0x08); flag_N = false; flag_H = true; }
-        public void BIT_3_H() { flag_Z = !((reg_H & 0x08) == 0x08); flag_N = false; flag_H = true; }
-        public void BIT_3_L() { flag_Z = !((reg_L & 0x08) == 0x08); flag_N = false; flag_H = true; }
-        public void BIT_3_aHL() { flag_Z = !((generalMemory[reg_HL] & 0x08) == 0x08); flag_N = false; flag_H = true; }
-        public void BIT_3_A() { flag_Z = !((reg_A & 0x08) == 0x08); flag_N = false; flag_H = true; }
+        public void BIT_3_A() { flag_Z = (reg_A & 0x08) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_3_B() { flag_Z = (reg_B & 0x08) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_3_C() { flag_Z = (reg_C & 0x08) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_3_D() { flag_Z = (reg_D & 0x08) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_3_E() { flag_Z = (reg_E & 0x08) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_3_H() { flag_Z = (reg_H & 0x08) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_3_L() { flag_Z = (reg_L & 0x08) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_3_aHL() { flag_Z = (generalMemory[reg_HL] & 0x08) == 0x00; flag_N = false; flag_H = true; }
 
-        public void BIT_4_B() { flag_Z = !((reg_B & 0x10) == 0x10); flag_N = false; flag_H = true; }
-        public void BIT_4_C() { flag_Z = !((reg_C & 0x10) == 0x10); flag_N = false; flag_H = true; }
-        public void BIT_4_D() { flag_Z = !((reg_D & 0x10) == 0x10); flag_N = false; flag_H = true; }
-        public void BIT_4_E() { flag_Z = !((reg_E & 0x10) == 0x10); flag_N = false; flag_H = true; }
-        public void BIT_4_H() { flag_Z = !((reg_H & 0x10) == 0x10); flag_N = false; flag_H = true; }
-        public void BIT_4_L() { flag_Z = !((reg_L & 0x10) == 0x10); flag_N = false; flag_H = true; }
-        public void BIT_4_aHL() { flag_Z = !((generalMemory[reg_HL] & 0x10) == 0x10); flag_N = false; flag_H = true; }
-        public void BIT_4_A() { flag_Z = !((reg_A & 0x10) == 0x10); flag_N = false; flag_H = true; }
+        public void BIT_4_A() { flag_Z = (reg_A & 0x10) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_4_B() { flag_Z = (reg_B & 0x10) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_4_C() { flag_Z = (reg_C & 0x10) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_4_D() { flag_Z = (reg_D & 0x10) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_4_E() { flag_Z = (reg_E & 0x10) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_4_H() { flag_Z = (reg_H & 0x10) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_4_L() { flag_Z = (reg_L & 0x10) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_4_aHL() { flag_Z = (generalMemory[reg_HL] & 0x10) == 0x00; flag_N = false; flag_H = true; }
 
-        public void BIT_5_B() { flag_Z = !((reg_B & 0x20) == 0x20); flag_N = false; flag_H = true; }
-        public void BIT_5_C() { flag_Z = !((reg_C & 0x20) == 0x20); flag_N = false; flag_H = true; }
-        public void BIT_5_D() { flag_Z = !((reg_D & 0x20) == 0x20); flag_N = false; flag_H = true; }
-        public void BIT_5_E() { flag_Z = !((reg_E & 0x20) == 0x20); flag_N = false; flag_H = true; }
-        public void BIT_5_H() { flag_Z = !((reg_H & 0x20) == 0x20); flag_N = false; flag_H = true; }
-        public void BIT_5_L() { flag_Z = !((reg_L & 0x20) == 0x20); flag_N = false; flag_H = true; }
-        public void BIT_5_aHL() { flag_Z = !((generalMemory[reg_HL] & 0x20) == 0x20); flag_N = false; flag_H = true; }
-        public void BIT_5_A() { flag_Z = !((reg_A & 0x20) == 0x20); flag_N = false; flag_H = true; }
+        public void BIT_5_A() { flag_Z = (reg_A & 0x20) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_5_B() { flag_Z = (reg_B & 0x20) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_5_C() { flag_Z = (reg_C & 0x20) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_5_D() { flag_Z = (reg_D & 0x20) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_5_E() { flag_Z = (reg_E & 0x20) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_5_H() { flag_Z = (reg_H & 0x20) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_5_L() { flag_Z = (reg_L & 0x20) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_5_aHL() { flag_Z = (generalMemory[reg_HL] & 0x20) == 0x00; flag_N = false; flag_H = true; }
 
-        public void BIT_6_B() { flag_Z = !((reg_B & 0x40) == 0x40); flag_N = false; flag_H = true; }
-        public void BIT_6_C() { flag_Z = !((reg_C & 0x40) == 0x40); flag_N = false; flag_H = true; }
-        public void BIT_6_D() { flag_Z = !((reg_D & 0x40) == 0x40); flag_N = false; flag_H = true; }
-        public void BIT_6_E() { flag_Z = !((reg_E & 0x40) == 0x40); flag_N = false; flag_H = true; }
-        public void BIT_6_H() { flag_Z = !((reg_H & 0x40) == 0x40); flag_N = false; flag_H = true; }
-        public void BIT_6_L() { flag_Z = !((reg_L & 0x40) == 0x40); flag_N = false; flag_H = true; }
-        public void BIT_6_aHL() { flag_Z = !((generalMemory[reg_HL] & 0x40) == 0x40); flag_N = false; flag_H = true; }
-        public void BIT_6_A() { flag_Z = !((reg_A & 0x40) == 0x40); flag_N = false; flag_H = true; }
+        public void BIT_6_A() { flag_Z = (reg_A & 0x40) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_6_B() { flag_Z = (reg_B & 0x40) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_6_C() { flag_Z = (reg_C & 0x40) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_6_D() { flag_Z = (reg_D & 0x40) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_6_E() { flag_Z = (reg_E & 0x40) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_6_H() { flag_Z = (reg_H & 0x40) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_6_L() { flag_Z = (reg_L & 0x40) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_6_aHL() { flag_Z = (generalMemory[reg_HL] & 0x40) == 0x00; flag_N = false; flag_H = true; }
 
-        public void BIT_7_B() { flag_Z = !((reg_B & 0x80) == 0x80); flag_N = false; flag_H = true; }
-        public void BIT_7_C() { flag_Z = !((reg_C & 0x80) == 0x80); flag_N = false; flag_H = true; }
-        public void BIT_7_D() { flag_Z = !((reg_D & 0x80) == 0x80); flag_N = false; flag_H = true; }
-        public void BIT_7_E() { flag_Z = !((reg_E & 0x80) == 0x80); flag_N = false; flag_H = true; }
-        public void BIT_7_H() { flag_Z = !((reg_H & 0x80) == 0x80); flag_N = false; flag_H = true; }
-        public void BIT_7_L() { flag_Z = !((reg_L & 0x80) == 0x80); flag_N = false; flag_H = true; }
-        public void BIT_7_aHL() { flag_Z = !((generalMemory[reg_HL] & 0x80) == 0x80); flag_N = false; flag_H = true; }
-        public void BIT_7_A() { flag_Z = !((reg_A & 0x80) == 0x80); flag_N = false; flag_H = true; }
+        public void BIT_7_A() { flag_Z = (reg_A & 0x80) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_7_B() { flag_Z = (reg_B & 0x80) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_7_C() { flag_Z = (reg_C & 0x80) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_7_D() { flag_Z = (reg_D & 0x80) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_7_E() { flag_Z = (reg_E & 0x80) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_7_H() { flag_Z = (reg_H & 0x80) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_7_L() { flag_Z = (reg_L & 0x80) == 0x00; flag_N = false; flag_H = true; }
+        public void BIT_7_aHL() { flag_Z = (generalMemory[reg_HL] & 0x80) == 0x00; flag_N = false; flag_H = true; }
     }
 }

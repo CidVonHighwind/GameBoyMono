@@ -27,7 +27,13 @@ namespace GameBoyMono
 
                 _generalMemory[index] = value;
 
-                if (index == 0xFF42 && value == 3)
+                // timer
+                if (index == 0xFF04)
+                    _generalMemory[index] = 0x00;
+                if (index == 0xFF07) { }
+
+
+                    if (index == 0xFF42 && value == 3)
                 {
                 }
                 if (index == 0xFF42) { }
@@ -42,6 +48,16 @@ namespace GameBoyMono
                 }
 
             }
+        }
+
+        /// <summary>
+        /// set a value without anyone noticing
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="value"></param>
+        public void SetByte(ushort index, byte value)
+        {
+            _generalMemory[index] = value;
         }
     }
 }

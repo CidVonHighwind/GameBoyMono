@@ -55,8 +55,12 @@ namespace GameBoyMono
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
+            // LCD Display Enable
+            if ((Game1.gbCPU.generalMemory[0xFF40] & 0x80) == 0x00)
+                return;
 
+            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
+            
             // draw the tiledata
             int scale = 1;
             spriteBatch.Draw(sprTileData0, new Rectangle(0, 264, sprTileData0.Width * scale, sprTileData0.Height * scale), Color.White);
@@ -77,6 +81,7 @@ namespace GameBoyMono
             byte LCDC = Game1.gbCPU.generalMemory[0xFF40];
             bool LCDC_Bit4 = (LCDC & 0x10) == 0x10; // true=first tile bank, false=second tile bank
             bool LCDC_Bit3 = (LCDC & 0x08) == 0x08; // 0=9800-9BFF, 1=9C00-9FFF
+            
             //LCDC_Bit4 = true;
 
             int startAddress = LCDC_Bit3 ? 0x9C00 : 0x9800;

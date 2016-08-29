@@ -43,7 +43,8 @@ namespace GameBoyMono
 
         protected override void LoadContent()
         {
-            byte bt1 = 0xFC;
+            byte bt1 = 0xFF;
+            byte bt2 = (byte)((bt1 >> 1) | (bt1 & 0x80));
             int b1 = 0x297 + (sbyte)bt1;
             b1 = 0;
 
