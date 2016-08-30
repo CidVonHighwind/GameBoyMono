@@ -24,7 +24,9 @@ namespace GameBoyMono
         public static Texture2D sprWhite;
 
         ScreenRenderer gbRenderer = new ScreenRenderer();
-        
+
+        string logString;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);

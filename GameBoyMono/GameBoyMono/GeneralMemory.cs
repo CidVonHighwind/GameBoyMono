@@ -33,7 +33,7 @@ namespace GameBoyMono
                 if (index == 0xFF07) { }
 
 
-                    if (index == 0xFF42 && value == 3)
+                if (index == 0xFF42 && value == 3)
                 {
                 }
                 if (index == 0xFF42) { }

@@ -41,10 +41,10 @@ namespace GameBoyMono
         public ushort reg_DE { get { return (ushort)(reg_D << 8 | reg_E); } set { reg_D = (byte)(value >> 8); reg_E = (byte)(value & 0xFF); } }
         public ushort reg_HL { get { return (ushort)(reg_H << 8 | reg_L); } set { reg_H = (byte)(value >> 8); reg_L = (byte)(value & 0xFF); } }
 
-        public bool flag_Z { get { return (reg_F >> 7) == 1; } set { reg_F = (byte)((reg_F & 0x7F) | (value ? 0x80 : 0x00)); } }
-        public bool flag_N { get { return ((reg_F >> 6) & 0x01) == 1; } set { reg_F = (byte)((reg_F & 0xBF) | (value ? 0x40 : 0x00)); } }
-        public bool flag_H { get { return ((reg_F >> 5) & 0x01) == 1; } set { reg_F = (byte)((reg_F & 0xDF) | (value ? 0x20 : 0x00)); } }
-        public bool flag_C { get { return ((reg_F >> 4) & 0x01) == 1; } set { reg_F = (byte)((reg_F & 0xEF) | (value ? 0x10 : 0x00)); } }
+        public bool flag_Z { get { return (reg_F & 0x80) == 0x80; } set { reg_F = (byte)((reg_F & 0x7F) | (value ? 0x80 : 0x00)); } }
+        public bool flag_N { get { return (reg_F & 0x40) == 0x40; } set { reg_F = (byte)((reg_F & 0xBF) | (value ? 0x40 : 0x00)); } }
+        public bool flag_H { get { return (reg_F & 0x20) == 0x20; } set { reg_F = (byte)((reg_F & 0xDF) | (value ? 0x20 : 0x00)); } }
+        public bool flag_C { get { return (reg_F & 0x10) == 0x10; } set { reg_F = (byte)((reg_F & 0xEF) | (value ? 0x10 : 0x00)); } }
 
         /*
          * SP - stack point
@@ -73,6 +73,8 @@ namespace GameBoyMono
         Timer gbTimer = new Timer();
 
         int divCounter, timerCounter;
+
+        string opLog;
 
         byte[] cycleArray = new byte[] {    04,12,08,08,04,04,08,04,20,08,08,08,04,04,08,04,
                                             04,12,08,08,04,04,08,04,12,08,08,08,04,04,08,04,
@@ -169,6 +171,14 @@ namespace GameBoyMono
             reg_PC = 0x00;
 
             MountDMGRom();
+
+            byte b1 = 0xFA;
+            byte b2 = 0x09;
+            byte b3 = (byte)(b1 + b2);
+
+            reg_B = 0x11;
+            flag_C = false;
+            RL_B();
         }
 
         public void Update(GameTime gametime)
@@ -182,31 +192,50 @@ namespace GameBoyMono
                 // set mode flag
                 // mode 2,3,0 cycle
                 int smallCycle = cycleCount % 456;
+                int oldStat = generalMemory[0xFF41];
 
                 // cycle: 456 clks * 144
                 // 2: 77-84     (80)    read oam memory
-                // 3: 169-175   (171)   transf data to lcd
-                // 0: 201-207   (205)   H-Blank 
-                //
+                // 3: 169-175   (172)   transf data to lcd
+                // 0: 201-207   (204)   H-Blank 
+                // LY=153: 56cl     LY=0: 856
                 // 1:                   V-Blank
                 // 144*456(65.664) + 4560 = 70224
                 if (cycleCount >= 65664)
                     generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x01);
                 else if (smallCycle < 80)
                     generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x02);
-                else if (smallCycle < 251)
+                else if (smallCycle < 252)
                     generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC) + 0x03);
                 else
                     generalMemory[0xFF41] = (byte)((generalMemory[0xFF41] & 0xFC));
 
 
-                byte oldLY = generalMemory[0xFF44];
-                // set the LY value
-                generalMemory[0xFF44] = (byte)(cycleCount / 456);
+                if (generalMemory[0xFF44] != (byte)(cycleCount / 456))
+                {
+                    // set the LY byte
+                    generalMemory[0xFF44] = (byte)(cycleCount / 456);
 
-                // v-blank flag
-                if (oldLY == 143 && generalMemory[0xFF44] == 144)
-                    generalMemory[0xFF0F] |= 0x01;  // set bit 0
+                    // v-blank flag
+                    if (generalMemory[0xFF44] == 144)
+                        generalMemory[0xFF0F] |= 0x01;  // set bit 0
+                }
+
+                // set coincidence flag (0:LYC<>LY, 1:LYC=LY)
+                if (generalMemory[0xFF44] == generalMemory[0xFF45])
+                    generalMemory[0xFF41] |= 0x04;
+                else
+                    generalMemory[0xFF41] &= 0xFB;
+
+                if (((generalMemory[0xFF41] & 0x40) == 0x40 && generalMemory[0xFF44] == generalMemory[0xFF45]) ||               // LY == LYC
+                    ((generalMemory[0xFF41] & 0x20) == 0x20 && (oldStat & 0x3) == 0 && (generalMemory[0xFF41] & 0x03) == 1) ||  // OAM (start of mode 1 and 2)
+                    ((generalMemory[0xFF41] & 0x20) == 0x20 && (oldStat & 0x3) == 1 && (generalMemory[0xFF41] & 0x03) == 2) ||
+                    ((generalMemory[0xFF41] & 0x10) == 0x10 && (oldStat & 0x3) == 0 && (generalMemory[0xFF41] & 0x03) == 1) ||  // v-blank
+                    ((generalMemory[0xFF41] & 0x08) == 0x08 && (oldStat & 0x3) == 3 && (generalMemory[0xFF41] & 0x03) == 0))    // h-blank (start of mode 0)
+                {
+                    // stat interrupt
+                    generalMemory[0xFF0F] |= 0x02;
+                }
 
 
                 // 16384Hz invrement:
@@ -225,7 +254,7 @@ namespace GameBoyMono
                 // Timer counter update
                 if ((generalMemory[0xFF07] & 0x04) == 0x04)
                 {
-                    timerCounter += generalMemory[reg_PC];
+                    timerCounter += cycleArray[generalMemory[reg_PC]];
 
                     int threshold = 0;
                     // 00:   4096 Hz(~4194 Hz SGB)
@@ -261,30 +290,17 @@ namespace GameBoyMono
 
                     }
                 }
-
-
-
-
-
-
+                
                 // v-blank interrupt
                 if (IME && (generalMemory[0xFFFF] & 0x01) == 0x01 && (generalMemory[0xFF0F] & 0x01) == 0x01)
                     VblankInterrupt();
+                // LCD STAT interrupt
+                if (IME && (generalMemory[0xFFFF] & 0x02) == 0x02 && (generalMemory[0xFF0F] & 0x02) == 0x02)
+                    StatInterrupt();
                 // timer overflow interrupt
                 if (IME && (generalMemory[0xFFFF] & 0x04) == 0x04 && (generalMemory[0xFF0F] & 0x04) == 0x04)
                     TimerInterrupt();
-
-                // set coincidence flag
-                if (generalMemory[0xFF44] == generalMemory[0xFF45]) //LY == LYC
-                {
-                    generalMemory[0xFF41] |= 0x04;  // set bit 2
-
-                    // LCD STAT interrupt
-                    if (IME && (generalMemory[0xFFFF] & 0x02) == 0x02) { }
-                }
-                else
-                    generalMemory[0xFF41] &= 0xFB;
-
+                
                 // execute next instruction
                 nextInstruction();
 
@@ -383,7 +399,10 @@ namespace GameBoyMono
             pre1 = pre0;
             pre0 = reg_PC;
 
+            if (reg_PC == 0x0325) { }
+
             byte currentInstruction = generalMemory[reg_PC];
+            int oldPC = reg_PC;
             Action action;
 
             // cb prefix instructions
@@ -408,6 +427,8 @@ namespace GameBoyMono
             {
 
             }
+
+            //opLog += "\n" + opName + " " + (((reg_PC - oldPC) == 3) ? data16.ToString() : (((reg_PC - oldPC) == 2) ? data8.ToString() : ""));
         }
 
         /*
@@ -438,7 +459,7 @@ namespace GameBoyMono
             reg_PC = 0x40;
         }
 
-        public void HblankInterrupt()
+        public void StatInterrupt()
         {
             ExecuteInterrupt();
 
