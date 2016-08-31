@@ -324,9 +324,40 @@ namespace GameBoyMono
         public void CP_d8() { flag_Z = (reg_A == data8); flag_N = true; flag_H = (reg_A & 0x0F) < (data8 & 0x0F); flag_C = reg_A < data8; }
         public void CP_aHL() { flag_Z = reg_A == generalMemory[reg_HL]; flag_N = true; flag_H = (reg_A & 0x0F) < (generalMemory[reg_HL] & 0x0F); flag_C = reg_A < generalMemory[reg_HL]; }
 
-        // very wrong
-        //public void DAA() { reg_A = (byte)(((reg_A / 10) << 4) + reg_A % 10); flag_Z = reg_A == 0x00; flag_H = false; }
-        public void DAA() {  }
+        // DAA
+        public void DAA()
+        {
+            int temp = reg_A;
+
+            // ADD/ADC
+            if (!flag_N)
+            {
+                if (flag_H || ((temp & 0xF) > 9))
+                    temp += 0x06;
+
+                if (flag_C || (temp > 0x9F))
+                    temp += 0x60;
+            }
+            // SUB/SBC
+            else
+            {
+                if (flag_H)
+                    temp = (temp - 6) & 0xFF;
+
+                if (flag_C)
+                    temp -= 0x60;
+            }
+
+            flag_H = false;
+            flag_Z = (temp & 0xFF) == 0x00;
+
+            if ((temp & 0x100) == 0x100)
+                flag_C = true;
+
+            temp &= 0xFF;
+
+            reg_A = (byte)temp;
+        }
         public void CPL() { reg_A = (byte)(~reg_A); flag_N = true; flag_H = true; }
         public void SCF() { flag_N = false; flag_H = false; flag_C = true; }
         public void CCF() { flag_N = false; flag_H = false; flag_C = !flag_C; }

@@ -11,6 +11,7 @@ namespace GameBoyMono
         SpriteBatch spriteBatch;
 
         SpriteFont font0;
+        Effect gbShader;
 
         public static string[] parameter;
 
@@ -29,11 +30,15 @@ namespace GameBoyMono
 
         int stepCount;
 
+        float renderScale;
+        Rectangle renderRectangle;
+        RenderTarget2D shaderRenderTarget;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferWidth = 1600;
-            graphics.PreferredBackBufferHeight = 1024;
+            graphics.PreferredBackBufferHeight = 1008;
             graphics.ApplyChanges();
             Content.RootDirectory = "Content";
         }
@@ -61,11 +66,30 @@ namespace GameBoyMono
             //gbTimer.Start();
 
             font0 = Content.Load<SpriteFont>("font0");
+            gbShader = Content.Load<Effect>("gbShader1");
 
             sprWhite = new Texture2D(graphics.GraphicsDevice, 1, 1);
             sprWhite.SetData(new Color[] { Color.White });
 
             gbRenderer.Load(Content);
+
+            UpdateScale();
+        }
+
+        public void UpdateScale()
+        {
+            float widthScale = graphics.PreferredBackBufferWidth / 160f;
+            float heightScale = graphics.PreferredBackBufferHeight / 144f;
+
+            renderScale = MathHelper.Min(widthScale, heightScale);
+
+            int width = (int)(renderScale * 160);
+            int height = (int)(renderScale * 144);
+
+            renderRectangle = new Rectangle(graphics.PreferredBackBufferWidth / 2 - width / 2,
+                graphics.PreferredBackBufferHeight / 2 - height / 2, width, height);
+
+            shaderRenderTarget = new RenderTarget2D(graphics.GraphicsDevice, 160 * (int)renderScale, 144 * (int)renderScale);
         }
 
 
@@ -78,8 +102,8 @@ namespace GameBoyMono
         protected override void Update(GameTime gameTime)
         {
             // update the cpu
-             gbCPU.Update(gameTime);
-            
+            gbCPU.Update(gameTime);
+
             //if (InputHandler.KeyPressed(Keys.Space) || (InputHandler.KeyDown(Keys.Space) && stepCount == 5))
             //{
             //    gbCPU.CPUCycle();
@@ -106,9 +130,26 @@ namespace GameBoyMono
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            gbRenderer.Draw(spriteBatch);
+            gbRenderer.RenderScreen(spriteBatch);
+            //gbRenderer.Draw(spriteBatch);
+
+
+            gbShader.Parameters["spriteWidth"].SetValue(shaderRenderTarget.Width);
+            gbShader.Parameters["spriteHeight"].SetValue(shaderRenderTarget.Height);
+            gbShader.Parameters["scale"].SetValue((int)renderScale);
+
+            graphics.GraphicsDevice.SetRenderTarget(shaderRenderTarget);
+            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
+
+            spriteBatch.Draw(gbRenderer.gbRenderTarget, new Rectangle(0, 0, shaderRenderTarget.Width, shaderRenderTarget.Height), new Color(142, 150, 114));
+
+            spriteBatch.End();
+            graphics.GraphicsDevice.SetRenderTarget(null);
 
             spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
+
+            spriteBatch.Draw(shaderRenderTarget, renderRectangle, Color.White);
+
 
             string strDebugger = "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
                                     "BC: 0x" + string.Format("{0:X}", gbCPU.reg_BC) + "\n" +
@@ -120,9 +161,9 @@ namespace GameBoyMono
                                     "LYC: " + gbCPU.LYC + "\n" +
                                     "Stat: " + string.Format("{0:X}", gbCPU.Stat) + "\n";
             // debugger
-            spriteBatch.DrawString(font0, strDebugger, new Vector2(0, 1024 - font0.MeasureString(strDebugger).Y), Color.White);
+            //spriteBatch.DrawString(font0, strDebugger, new Vector2(0, 1024 - font0.MeasureString(strDebugger).Y), Color.White);
 
-            spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
+            //spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
 
             //spriteBatch.DrawString(font0, "" + gbCPU.reg_PC, new Vector2(0, 0), Color.Red);
 
