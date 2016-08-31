@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <StartArguments>C:\Users\Patri\Desktop\Tetris%28World%29.gb drMario.gb  ZAS%28Japan%29Edit.gb  cpu_instrs\individual\02-interrupts.gb</StartArguments>
+    <StartArguments>C:\Users\Patri\Desktop\Tetris%28World%29.gb opus5.gb  ttt.gb drMario.gb  ZAS%28Japan%29Edit.gb  cpu_instrs\individual\02-interrupts.gb</StartArguments>
   </PropertyGroup>
 </Project>

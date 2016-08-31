@@ -8,13 +8,17 @@ namespace GameBoyMono
 {
     public class GeneralMemory
     {
-        byte[] _generalMemory = new byte[65536];
+        public byte[] _generalMemory = new byte[65536];
 
         public byte this[int index]
         {
             get
             {
                 if (index == 0xFF42) { }
+                if (0xE000 <= index && index <= 0xFDFF)
+                {
+                    return _generalMemory[index - 0x2000];
+                }
                 return _generalMemory[index];
             }
             set
@@ -27,11 +31,20 @@ namespace GameBoyMono
 
                 _generalMemory[index] = value;
 
+                // shadow memory
+                if (0xE000 <= index && index <= 0xFDFF)
+                {
+                    _generalMemory[index - 0x2000] = value;
+                }
+
                 // timer
                 if (index == 0xFF04)
                     _generalMemory[index] = 0x00;
                 if (index == 0xFF07) { }
 
+                // input
+                if (index == 0xFF00)
+                { }
 
                 if (index == 0xFF42 && value == 3)
                 {

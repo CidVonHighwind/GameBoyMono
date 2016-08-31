@@ -21,17 +21,19 @@ namespace GameBoyMono
         byte destinationCode;
 
         public static GameBoyCPU gbCPU = new GameBoyCPU();
-        public static Texture2D sprWhite;
+        public static Texture2D sprWhite, sprMemory;
 
         ScreenRenderer gbRenderer = new ScreenRenderer();
 
         string logString;
 
+        int stepCount;
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferWidth = 1600;
-            graphics.PreferredBackBufferHeight = 900;
+            graphics.PreferredBackBufferHeight = 1024;
             graphics.ApplyChanges();
             Content.RootDirectory = "Content";
         }
@@ -45,20 +47,16 @@ namespace GameBoyMono
 
         protected override void LoadContent()
         {
-            byte bt1 = 0xFF;
-            byte bt2 = (byte)((bt1 >> 1) | (bt1 & 0x80));
-            int b1 = 0x297 + (sbyte)bt1;
-            b1 = 0;
-
+            sprMemory = new Texture2D(graphics.GraphicsDevice, 512, 1024);
 
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            
+
             LoadRom(parameter[0]);
             //LoadRamDump(parameter[0]);
 
             gbCPU.Start();
-            
+
             //gbTimer = new Thread(GameBoyTimer);
             //gbTimer.Start();
 
@@ -80,11 +78,26 @@ namespace GameBoyMono
         protected override void Update(GameTime gameTime)
         {
             // update the cpu
-            gbCPU.Update(gameTime);
+             gbCPU.Update(gameTime);
             
+            //if (InputHandler.KeyPressed(Keys.Space) || (InputHandler.KeyDown(Keys.Space) && stepCount == 5))
+            //{
+            //    gbCPU.CPUCycle();
+
+            //    UpdateSprMemory();
+
+            //    if (!InputHandler.KeyPressed(Keys.Space))
+            //        stepCount = 0;
+            //}
+
+            if (InputHandler.KeyDown(Keys.Space))
+                stepCount++;
+            else
+                stepCount = -20;
+
             // update the renderer
             gbRenderer.Update();
-            
+
             base.Update(gameTime);
         }
 
@@ -92,11 +105,24 @@ namespace GameBoyMono
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            
+
             gbRenderer.Draw(spriteBatch);
 
             spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
 
+            string strDebugger = "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
+                                    "BC: 0x" + string.Format("{0:X}", gbCPU.reg_BC) + "\n" +
+                                    "DE: 0x" + string.Format("{0:X}", gbCPU.reg_DE) + "\n" +
+                                    "HL: 0x" + string.Format("{0:X}", gbCPU.reg_HL) + "\n" +
+                                    "SP: 0x" + string.Format("{0:X}", gbCPU.reg_SP) + "\n" +
+                                    "PC: 0x" + string.Format("{0:X}", gbCPU.reg_PC) + "\n\n" +
+                                    "LY: " + gbCPU.LY + "\n" +
+                                    "LYC: " + gbCPU.LYC + "\n" +
+                                    "Stat: " + string.Format("{0:X}", gbCPU.Stat) + "\n";
+            // debugger
+            spriteBatch.DrawString(font0, strDebugger, new Vector2(0, 1024 - font0.MeasureString(strDebugger).Y), Color.White);
+
+            spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
 
             //spriteBatch.DrawString(font0, "" + gbCPU.reg_PC, new Vector2(0, 0), Color.Red);
 
@@ -105,8 +131,9 @@ namespace GameBoyMono
             //    for (int x = 0; x < 16; x++)
             //    {
             //        System.Action action = gbCPU.ops[x + y * 16];
-            //        if(action != null)
-            //        spriteBatch.DrawString(font0, action.Method.Name, new Vector2(30 + x * 83 + 41 - (int)(font0.MeasureString(action.Method.Name).X / 2), 20 + y * 40), Color.White);
+            //        if (action != null)
+            //            spriteBatch.DrawString(font0, action.Method.Name + "\n" + gbCPU.opLength[x+y*16], 
+            //                new Vector2(30 + x * 83 + 41 - (int)(font0.MeasureString(action.Method.Name).X / 2), 20 + y * 40), Color.White);
             //    }
             //}
 
@@ -114,7 +141,25 @@ namespace GameBoyMono
 
             base.Draw(gameTime);
         }
-        
+
+        void UpdateSprMemory()
+        {
+            Color[] clMemory = new Color[1024 * 512];
+            for (int i = 0; i <= 0xFFFF; i++)
+            {
+                clMemory[i * 8 + 0] = ((gbCPU.generalMemory._generalMemory[i] & 0x80) == 0x80) ? Color.Black : Color.White;
+                clMemory[i * 8 + 1] = ((gbCPU.generalMemory._generalMemory[i] & 0x40) == 0x40) ? Color.Black : Color.White;
+                clMemory[i * 8 + 2] = ((gbCPU.generalMemory._generalMemory[i] & 0x20) == 0x20) ? Color.Black : Color.White;
+                clMemory[i * 8 + 3] = ((gbCPU.generalMemory._generalMemory[i] & 0x10) == 0x10) ? Color.Black : Color.White;
+                clMemory[i * 8 + 4] = ((gbCPU.generalMemory._generalMemory[i] & 0x08) == 0x08) ? Color.Black : Color.White;
+                clMemory[i * 8 + 5] = ((gbCPU.generalMemory._generalMemory[i] & 0x04) == 0x04) ? Color.Black : Color.White;
+                clMemory[i * 8 + 6] = ((gbCPU.generalMemory._generalMemory[i] & 0x02) == 0x02) ? Color.Black : Color.White;
+                clMemory[i * 8 + 7] = ((gbCPU.generalMemory._generalMemory[i] & 0x01) == 0x01) ? Color.Black : Color.White;
+            }
+
+            sprMemory.SetData(clMemory);
+        }
+
         void LoadRom(string path)
         {
             using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read))
@@ -122,7 +167,7 @@ namespace GameBoyMono
                 using (BinaryReader romReader = new BinaryReader(fileStream))
                 {
                     // load the first junk into the general memory
-                    for (int i = 0; i < 0x03FF; i++)
+                    for (int i = 0; i < 0x8000; i++)
                     {
                         gbCPU.generalMemory[i] = romReader.ReadByte();
 

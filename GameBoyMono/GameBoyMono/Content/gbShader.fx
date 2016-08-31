@@ -24,16 +24,14 @@ float4 MainPS(float4 pos : SV_POSITION, float4 color1 : COLOR0, float2 coords: T
 {
 	float4 spriteColor = tex2D(s0,coords);
 	
-	if(spriteColor.r == 0)
+	if(spriteColor.x < 0.1)
 		return color1;
-	else if(spriteColor.g == 0)
+	else if(spriteColor.y < 0.1)
 		return color2;
-	else if(spriteColor.b == 0)
+	else if(spriteColor.z < 0.1)
 		return color3;
-	else if(spriteColor.a == 0)
+	else
 		return color4;
-		
-	return spriteColor;
 }
 
 technique SpriteDrawing

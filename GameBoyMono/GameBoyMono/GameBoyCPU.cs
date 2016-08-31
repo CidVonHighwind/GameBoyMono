@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -76,6 +77,13 @@ namespace GameBoyMono
 
         string opLog;
 
+        public byte LY { get { return generalMemory[0xFF44]; } }
+        public byte LYC { get { return generalMemory[0xFF45]; } }
+        public byte LCDMode { get { return (byte)(generalMemory[0xFF41] & 0x03); } }
+         
+        public byte Stat { get { return generalMemory[0xFF41]; } }
+        
+
         byte[] cycleArray = new byte[] {    04,12,08,08,04,04,08,04,20,08,08,08,04,04,08,04,
                                             04,12,08,08,04,04,08,04,12,08,08,08,04,04,08,04,
                                             08,12,08,08,04,04,08,04,08,08,08,08,04,04,08,04,
@@ -110,22 +118,22 @@ namespace GameBoyMono
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08 };
 
-        byte[] opLength = new byte[] {      1,3,1,1,1,1,2,1,3,1,1,1,1,1,2,1,
-                                            1,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
-                                            2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
-                                            2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
-                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                            1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                            1,1,3,3,3,1,2,1,1,1,3,1,3,3,2,1,
-                                            1,1,3,0,3,1,2,1,1,1,3,0,3,0,2,1,
-                                            2,1,1,0,0,1,2,1,2,1,3,0,0,0,2,1,
-                                            2,1,1,1,0,1,2,1,2,1,3,1,0,0,2,1 };
+        public byte[] opLength = new byte[] {   1,3,1,1,1,1,2,1,3,1,1,1,1,1,2,1,
+                                                1,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
+                                                2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
+                                                2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
+                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                                                1,1,3,3,3,1,2,1,1,1,3,1,3,3,2,1,
+                                                1,1,3,0,3,1,2,1,1,1,3,0,3,0,2,1,
+                                                2,1,1,0,0,1,2,1,2,1,3,0,0,0,2,1,
+                                                2,1,1,1,0,1,2,1,2,1,3,1,0,0,2,1 };
 
         public GameBoyCPU()
         {
@@ -171,24 +179,24 @@ namespace GameBoyMono
             reg_PC = 0x00;
 
             MountDMGRom();
-
-            byte b1 = 0xFA;
-            byte b2 = 0x09;
-            byte b3 = (byte)(b1 + b2);
-
-            reg_B = 0x11;
-            flag_C = false;
-            RL_B();
         }
 
         public void Update(GameTime gametime)
         {
             while (cycleCount + cycleArray[generalMemory[reg_PC]] < maxCycles)
+                CPUCycle();
+
+            cycleCount -= maxCycles;
+        }
+
+        public void CPUCycle()
+        {
+            // update cycle count
+            cycleCount += cycleArray[generalMemory[reg_PC]];
+
+            // display enabled?
+            if ((Game1.gbCPU.generalMemory[0xFF40] & 0x80) == 0x80)
             {
-                // update cycle count
-                cycleCount += cycleArray[generalMemory[reg_PC]];
-
-
                 // set mode flag
                 // mode 2,3,0 cycle
                 int smallCycle = cycleCount % 456;
@@ -221,6 +229,8 @@ namespace GameBoyMono
                         generalMemory[0xFF0F] |= 0x01;  // set bit 0
                 }
 
+                //Game1.gbCPU.generalMemory[0xFF40] &= 0x7F;
+
                 // set coincidence flag (0:LYC<>LY, 1:LYC=LY)
                 if (generalMemory[0xFF44] == generalMemory[0xFF45])
                     generalMemory[0xFF41] |= 0x04;
@@ -236,173 +246,108 @@ namespace GameBoyMono
                     // stat interrupt
                     generalMemory[0xFF0F] |= 0x02;
                 }
+            }
 
+            // 16384Hz increment:
+            // 16384 / 60 = 273
+            // 70224 / 273 = 257
+            divCounter += cycleArray[generalMemory[reg_PC]];
+            if (divCounter > 257)
+            {
+                divCounter -= 257;
+                generalMemory.SetByte(0xFF04, (byte)(generalMemory[0xFF04] + 1));
+            }
 
-                // 16384Hz invrement:
-                // 16384 / 60 = 273
-                // 70224 / 273 = 257
-                divCounter += generalMemory[reg_PC];
-                if (divCounter > 257)
+            // FF07 - TAC - Timer Control
+            // Bit  2     - Timer Stop  (0=Stop, 1=Start)
+            // Bits 1 - 0 - Input Clock Select
+            // Timer counter update
+            if ((generalMemory[0xFF07] & 0x04) == 0x04)
+            {
+                timerCounter += cycleArray[generalMemory[reg_PC]];
+
+                int threshold = 0;
+                // 00:   4096 Hz(~4194 Hz SGB)
+                // 01: 262144 Hz(~268400 Hz SGB)
+                // 10:  65536 Hz(~67110 Hz SGB)
+                // 11:  16384 Hz(~16780 Hz SGB
+                switch (generalMemory[reg_PC])
                 {
-                    divCounter -= 257;
-                    generalMemory.SetByte(0xFF04, (byte)(generalMemory[0xFF04] + 1));
+                    case 0: threshold = 64; break;
+                    case 1: threshold = 1; break;
+                    case 2: threshold = 4; break;
+                    case 3: threshold = 16; break;
                 }
-
-                // FF07 - TAC - Timer Control
-                // Bit  2     - Timer Stop  (0=Stop, 1=Start)
-                // Bits 1 - 0 - Input Clock Select
-                // Timer counter update
-                if ((generalMemory[0xFF07] & 0x04) == 0x04)
+                // 262144 / 60 = 4369
+                // 70224 / 4369 = 16
+                if (timerCounter >= 16 * threshold)
                 {
-                    timerCounter += cycleArray[generalMemory[reg_PC]];
+                    timerCounter -= 16 * threshold;
 
-                    int threshold = 0;
-                    // 00:   4096 Hz(~4194 Hz SGB)
-                    // 01: 262144 Hz(~268400 Hz SGB)
-                    // 10:  65536 Hz(~67110 Hz SGB)
-                    // 11:  16384 Hz(~16780 Hz SGB
-                    switch (generalMemory[reg_PC])
+                    // timer interrupt
+                    if (generalMemory[0xFF05] == 0xFF)
                     {
-                        case 0: threshold = 64; break;
-                        case 1: threshold = 1; break;
-                        case 2: threshold = 4; break;
-                        case 3: threshold = 16; break;
+                        // TIMA = TMA
+                        generalMemory[0xFF05] = generalMemory[0xFF06];
+
+                        // set the IF register
+                        generalMemory[0xFF0F] |= 0x04;
                     }
-                    // 262144 / 60 = 4369
-                    // 70224 / 4369 = 16
-                    if (timerCounter >= 16 * threshold)
+                    else
                     {
-                        timerCounter -= 16 * threshold;
-
-                        // timer interrupt
-                        if (generalMemory[0xFF05] == 0xFF)
-                        {
-                            // TIMA = TMA
-                            generalMemory[0xFF05] = generalMemory[0xFF06];
-
-                            // set the IF register
-                            generalMemory[0xFF0F] |= 0x04;
-                        }
-                        else
-                        {
-                            generalMemory[0xFF05]++;
-                        }
-
+                        generalMemory[0xFF05]++;
                     }
-                }
-                
-                // v-blank interrupt
-                if (IME && (generalMemory[0xFFFF] & 0x01) == 0x01 && (generalMemory[0xFF0F] & 0x01) == 0x01)
-                    VblankInterrupt();
-                // LCD STAT interrupt
-                if (IME && (generalMemory[0xFFFF] & 0x02) == 0x02 && (generalMemory[0xFF0F] & 0x02) == 0x02)
-                    StatInterrupt();
-                // timer overflow interrupt
-                if (IME && (generalMemory[0xFFFF] & 0x04) == 0x04 && (generalMemory[0xFF0F] & 0x04) == 0x04)
-                    TimerInterrupt();
-                
-                // execute next instruction
-                nextInstruction();
 
-                if (bugFound)
-                {
-
-                }
-                if (romMounted & reg_PC == 0x100)
-                {
-                    UnmountDMGRom();
-                    gameStarted = true;
-
-                    // timer
-                    int gm1 = generalMemory[0xFF05];    //0x00;
-                    int gm2 = generalMemory[0xFF06];    //0x00;
-                    int gm3 = generalMemory[0xFF07];    //0x00;
-
-                    // sound stuff (not right)
-                    int gm4 = generalMemory[0xFF10];    //0x80;
-                    int gm5 = generalMemory[0xFF11];    //0xBF;
-                    int gm6 = generalMemory[0xFF12];    //0xF3;
-                    int gm7 = generalMemory[0xFF14];    //0xBF;
-                    int gm8 = generalMemory[0xFF16];    //0x3F;
-                    int gm9 = generalMemory[0xFF17];    //0x00;
-                    int gm10 = generalMemory[0xFF19];   //0xBF;
-                    int gm11 = generalMemory[0xFF1A];   //0x7F;
-                    int gm12 = generalMemory[0xFF1B];   //0xFF;
-                    int gm13 = generalMemory[0xFF1C];   //0x9F;
-                    int gm14 = generalMemory[0xFF1E];   //0xBF;
-                    int gm15 = generalMemory[0xFF20];   //0xFF;
-                    int gm16 = generalMemory[0xFF21];   //0x00;
-                    int gm17 = generalMemory[0xFF22];   //0x00;
-                    int gm18 = generalMemory[0xFF23];   //0xBF;
-                    int gm19 = generalMemory[0xFF24];   //0x77;
-                    int gm20 = generalMemory[0xFF25];   //0xF3;
-                    int gm21 = generalMemory[0xFF26];   //0xF1;
-
-                    int gm22 = generalMemory[0xFF40];   //0x91;
-                    int gm23 = generalMemory[0xFF42];   //0x00;
-                    int gm24 = generalMemory[0xFF43];   //0x00;
-                    int gm25 = generalMemory[0xFF45];   //0x00;
-                    int gm26 = generalMemory[0xFF47];   //0xFC;
-
-                    // color palett (not right)
-                    int gm27 = generalMemory[0xFF48];   //0xFF;
-                    int gm28 = generalMemory[0xFF49];   //0xFF;
-                    int gm29 = generalMemory[0xFF4A];   //0x00;
-                    int gm30 = generalMemory[0xFF4B];   //0x00;
-                    int gm31 = generalMemory[0xFFFF];   //0x00;
-
-                    //generalMemory[0xFF05] = 0x00;// TIMA
-                    //generalMemory[0xFF06] = 0x00;//TMA
-                    //generalMemory[0xFF07] = 0x00;//TAC
-                    //generalMemory[0xFF10] = 0x80;//NR10
-                    //generalMemory[0xFF11] = 0xBF;//NR11
-                    //generalMemory[0xFF12] = 0xF3;//NR12
-                    //generalMemory[0xFF14] = 0xBF;//NR14
-                    //generalMemory[0xFF16] = 0x3F;//NR21
-                    //generalMemory[0xFF17] = 0x00;//NR22
-                    //generalMemory[0xFF19] = 0xBF;//NR24
-                    //generalMemory[0xFF1A] = 0x7F;//NR30
-                    //generalMemory[0xFF1B] = 0xFF;//NR31
-                    //generalMemory[0xFF1C] = 0x9F;//NR32
-                    //generalMemory[0xFF1E] = 0xBF;//NR33
-                    //generalMemory[0xFF20] = 0xFF;//NR41
-                    //generalMemory[0xFF21] = 0x00;//NR42
-                    //generalMemory[0xFF22] = 0x00;//NR43
-                    //generalMemory[0xFF23] = 0xBF;//NR30
-                    //generalMemory[0xFF24] = 0x77;//NR50
-                    //generalMemory[0xFF25] = 0xF3;//NR51
-                    //generalMemory[0xFF26] = 0xF1; // GB, $F0 - SGB; NR52
-                    //generalMemory[0xFF40] = 0x91;//LCDC
-                    //generalMemory[0xFF42] = 0x00;//SCY
-                    //generalMemory[0xFF43] = 0x00;//SCX
-                    //generalMemory[0xFF45] = 0x00;//LYC
-                    //generalMemory[0xFF47] = 0xFC;//BGP
-                    //generalMemory[0xFF48] = 0xFF;//OBP0
-                    //generalMemory[0xFF49] = 0xFF;//OBP1
-                    //generalMemory[0xFF4A] = 0x00;//WY
-                    //generalMemory[0xFF4B] = 0x00;//WX
-                    //generalMemory[0xFFFF] = 0x00;//IE
                 }
             }
 
-            cycleCount -= maxCycles;
+            // todo: maybe put inside GeneralMemory
+            // update joypad input
+            generalMemory[0xFF00] &= 0xF0;
+            byte input = generalMemory[0xFF00];
+            if (input != 0x30) { }
+            // right, left, up, down
+            if ((generalMemory[0xFF00] & 0x10) == 0x00)
+            {
+                generalMemory[0xFF00] |= (byte)(InputHandler.KeyDown(Keys.Right) ? 0x00 : 0x01);
+                generalMemory[0xFF00] |= (byte)(InputHandler.KeyDown(Keys.Left) ? 0x00 : 0x02);
+                generalMemory[0xFF00] |= (byte)(InputHandler.KeyDown(Keys.Up) ? 0x00 : 0x04);
+                generalMemory[0xFF00] |= (byte)(InputHandler.KeyDown(Keys.Down) ? 0x00 : 0x08);
+            }
+            // a, b, select, start
+            if ((generalMemory[0xFF00] & 0x20) == 0x00)
+            {
+                generalMemory[0xFF00] |= (byte)(InputHandler.KeyDown(Keys.A) ? 0x00 : 0x01);
+                generalMemory[0xFF00] |= (byte)(InputHandler.KeyDown(Keys.S) ? 0x00 : 0x02);
+                generalMemory[0xFF00] |= (byte)(InputHandler.KeyDown(Keys.Back) ? 0x00 : 0x04);
+                generalMemory[0xFF00] |= (byte)(InputHandler.KeyDown(Keys.Enter) ? 0x00 : 0x08);
+            }
+
+
+            // v-blank interrupt
+            if (IME && (generalMemory[0xFFFF] & 0x01) == 0x01 && (generalMemory[0xFF0F] & 0x01) == 0x01)
+                VblankInterrupt();
+            // LCD STAT interrupt
+            if (IME && (generalMemory[0xFFFF] & 0x02) == 0x02 && (generalMemory[0xFF0F] & 0x02) == 0x02)
+                StatInterrupt();
+            // timer overflow interrupt
+            if (IME && (generalMemory[0xFFFF] & 0x04) == 0x04 && (generalMemory[0xFF0F] & 0x04) == 0x04)
+                TimerInterrupt();
+
+            // execute next instruction
+            nextInstruction();
+
+
+            if (romMounted & reg_PC == 0x100)
+            {
+                UnmountDMGRom();
+                gameStarted = true;
+            }
         }
 
         public void nextInstruction()
         {
-            pre7 = pre6;
-            pre6 = pre5;
-            pre5 = pre4;
-            pre4 = pre3;
-            pre3 = pre2;
-            pre2 = pre1;
-            pre1 = pre0;
-            pre0 = reg_PC;
-
-            if (reg_PC == 0x0325) { }
-
             byte currentInstruction = generalMemory[reg_PC];
-            int oldPC = reg_PC;
             Action action;
 
             // cb prefix instructions
@@ -423,10 +368,7 @@ namespace GameBoyMono
                 action();
                 opName = action.Method.Name;
             }
-            else
-            {
-
-            }
+            else { }
 
             //opLog += "\n" + opName + " " + (((reg_PC - oldPC) == 3) ? data16.ToString() : (((reg_PC - oldPC) == 2) ? data8.ToString() : ""));
         }

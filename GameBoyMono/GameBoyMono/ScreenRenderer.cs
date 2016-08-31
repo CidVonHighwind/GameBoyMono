@@ -21,9 +21,9 @@ namespace GameBoyMono
             LoadTexture(out sprTileData1, 1);
 
             gbShader = Content.Load<Effect>("gbShader");
-            gbShader.Parameters["color1"].SetValue(new Vector4(0, 0, 0, 1));
-            gbShader.Parameters["color2"].SetValue(new Vector4(0, 0.33f, 0.33f, 1));
-            gbShader.Parameters["color3"].SetValue(new Vector4(0.66f, 0, 0.66f, 1));
+            gbShader.Parameters["color1"].SetValue(new Vector4(0, 0.5f, 0, 1));
+            gbShader.Parameters["color2"].SetValue(new Vector4(1, 0, 0, 1));
+            gbShader.Parameters["color3"].SetValue(new Vector4(0, 1, 0, 1));
             gbShader.Parameters["color4"].SetValue(new Vector4(1, 1, 1, 1));
         }
 
@@ -55,16 +55,22 @@ namespace GameBoyMono
 
         public void Draw(SpriteBatch spriteBatch)
         {
-            // LCD Display Enable
-            if ((Game1.gbCPU.generalMemory[0xFF40] & 0x80) == 0x00)
-                return;
+            if (InputHandler.KeyDown(Microsoft.Xna.Framework.Input.Keys.Space))
+                spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
+            else
+                spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp);
 
-            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
-            
             // draw the tiledata
-            int scale = 1;
+            int scale = 3;
             spriteBatch.Draw(sprTileData0, new Rectangle(0, 264, sprTileData0.Width * scale, sprTileData0.Height * scale), Color.White);
             spriteBatch.Draw(sprTileData1, new Rectangle(sprTileData0.Width * scale + 8, 264, sprTileData1.Width * scale, sprTileData1.Height * scale), Color.White);
+
+            // LCD Display Enable
+            if ((Game1.gbCPU.generalMemory[0xFF40] & 0x80) == 0x00)
+            {
+                spriteBatch.End();
+                return;
+            }
 
             int drawPosX = Game1.gbCPU.generalMemory[0xFF43];
             int drawPosY = Game1.gbCPU.generalMemory[0xFF42];
@@ -79,47 +85,58 @@ namespace GameBoyMono
             // Bit 1 - OBJ(Sprite) Display Enable       (0 = Off, 1 = On)
             // Bit 0 - BG Display(for CGB see below)    (0 = Off, 1 = On)
             byte LCDC = Game1.gbCPU.generalMemory[0xFF40];
+            bool LCDC_Bit5 = (LCDC & 0x20) == 0x20;
             bool LCDC_Bit4 = (LCDC & 0x10) == 0x10; // true=first tile bank, false=second tile bank
             bool LCDC_Bit3 = (LCDC & 0x08) == 0x08; // 0=9800-9BFF, 1=9C00-9FFF
-            
+
             //LCDC_Bit4 = true;
 
             int startAddress = LCDC_Bit3 ? 0x9C00 : 0x9800;
             int endAddress = LCDC_Bit3 ? 0x9FFF : 0x9BFF;
 
             // LCDC Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
+            // draw the background
             for (int i = startAddress; i <= endAddress; i++)
             {
                 int data = (sbyte)Game1.gbCPU.generalMemory[i] + 128;
                 if (LCDC_Bit4)
                     data = Game1.gbCPU.generalMemory[i];
 
-                int posX = (i - startAddress) % 32;
-                int posY = (i - startAddress) / 32;
-                spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(posX * 8, posY * 8, 8, 8), new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
-            }
+                int posX = ((i - startAddress) % 32) * 8 - drawPosX;
+                int posY = ((i - startAddress) / 32) * 8 - drawPosY;
 
-            // Window
-            // Window Position
-            byte WY = Game1.gbCPU.generalMemory[0xFF4A];
-            byte WX = Game1.gbCPU.generalMemory[0xFF4B];
-            bool LCDC_Bit6 = (LCDC & 0x40) == 0x40; // Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
-            //LCDC_Bit6 = true;
-            startAddress = LCDC_Bit6 ? 0x9C00 : 0x9800;
-            endAddress = LCDC_Bit6 ? 0x9FFF : 0x9BFF;
+                if (posX + 8 < 0)
+                    posX += 256;
+                if (posY + 8 < 0)
+                    posY += 256;
 
-            for (int i = startAddress; i <= endAddress; i++)
-            {
-                int data = (sbyte)Game1.gbCPU.generalMemory[i] + 128;
-                if (LCDC_Bit4)
-                    data = Game1.gbCPU.generalMemory[i];
-
-                int posX = (i - startAddress) % 32;
-                int posY = (i - startAddress) / 32;
-                spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(WX + posX * 8, WY + posY * 8 - 7, 8, 8),
+                spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(posX * scale, posY * scale, 8 * scale, 8 * scale),
                     new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
             }
 
+            // Window
+            if (LCDC_Bit5)
+            {
+                // Window Position
+                byte WY = Game1.gbCPU.generalMemory[0xFF4A];
+                byte WX = Game1.gbCPU.generalMemory[0xFF4B];
+                bool LCDC_Bit6 = (LCDC & 0x40) == 0x40; // Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
+                                                        //LCDC_Bit6 = true;
+                startAddress = LCDC_Bit6 ? 0x9C00 : 0x9800;
+                endAddress = LCDC_Bit6 ? 0x9FFF : 0x9BFF;
+
+                for (int i = startAddress; i <= endAddress; i++)
+                {
+                    int data = (sbyte)Game1.gbCPU.generalMemory[i] + 128;
+                    if (LCDC_Bit4)
+                        data = Game1.gbCPU.generalMemory[i];
+
+                    int posX = (i - startAddress) % 32;
+                    int posY = (i - startAddress) / 32;
+                    spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(WX + posX * 8, WY + posY * 8 - 7, 8, 8),
+                        new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
+                }
+            }
 
             bool LCDC_Bit2 = (LCDC & 0x04) == 0x04; // obj size (0=8x8, 1=8x16)
             //LCDC_Bit2 = true;
@@ -128,8 +145,8 @@ namespace GameBoyMono
             for (int i = 0xFE00; i < 0xFE9F; i += 4)
             {
                 // Byte0-2:
-                byte posY = Game1.gbCPU.generalMemory[i];
-                byte posX = Game1.gbCPU.generalMemory[i + 1];
+                int posY = (Game1.gbCPU.generalMemory[i] - 16) * scale;
+                int posX = (Game1.gbCPU.generalMemory[i + 1] - 8) * scale;
                 byte tileNumber = Game1.gbCPU.generalMemory[i + 2];
                 byte attributes = Game1.gbCPU.generalMemory[i + 3];
                 // Byte3:
@@ -151,13 +168,13 @@ namespace GameBoyMono
                     tileNumber = (byte)(tileNumber & 0xFE);
 
                 // draw the tile
-                spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16, 8, 8), new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8),
+                spriteBatch.Draw(sprTileData0, new Rectangle(posX, posY, 8 * scale, 8 * scale), new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8),
                     Color.White, 0, Vector2.Zero, sprEffect, 0);
 
                 // draw the second part of the sprite if in 8x16 mode
                 if (LCDC_Bit2)
-                    spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16 + 8, 8, 8), new Rectangle(((tileNumber + 1) % 16) * 8, ((tileNumber + 1) / 16) * 8, 8, 8),
-                        Color.White, 0, Vector2.Zero, sprEffect, 0);
+                    spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16 + 8, 8 * scale, 8 * scale),
+                        new Rectangle(((tileNumber + 1) % 16) * 8, ((tileNumber + 1) / 16) * 8, 8, 8), Color.White, 0, Vector2.Zero, sprEffect, 0);
             }
 
             spriteBatch.End();
@@ -165,7 +182,7 @@ namespace GameBoyMono
             spriteBatch.Begin();
 
             // draw the screenPosition
-            spriteBatch.Draw(Game1.sprWhite, new Rectangle(drawPosX, drawPosY, 160, 144), Color.Green * 0.25f);
+            //spriteBatch.Draw(Game1.sprWhite, new Rectangle(0, 0, 160, 144), Color.Green * 0.25f);
 
             spriteBatch.End();
         }
@@ -205,13 +222,20 @@ namespace GameBoyMono
 
                             // convert the number to a color
                             float color = (3 - data) / 3f;
-                            Color cl = new Color(0, 1, 1, 1);
+
+                            Color cl = Color.Black;
+
+                            if (data == 0)
+                                cl = new Color(0, 1f, 1f);
                             if (data == 1)
-                                cl = new Color(1, 0, 1, 1);
+                                cl = new Color(1f, 0, 1f);
                             if (data == 2)
-                                cl = new Color(1, 1, 0, 1);
+                                cl = new Color(1f, 1f, 0);
                             if (data == 3)
-                                cl = new Color(1, 1, 1, 0);
+                                cl = new Color(1f, 1f, 1f);
+
+                            cl = new Color(color, color, color, 1);
+
                             colorData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] = cl;
                         }
                     }
