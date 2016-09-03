@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GameBoyMono
 {
-    class dmgRom
+    class DMGRom
     {
         public static byte[] romDump = {
         0x31, 0xFE, 0xFF, 0xAF, 0x21, 0xFF, 0x9F, 0x32, 0xCB, 0x7C, 0x20, 0xFB,

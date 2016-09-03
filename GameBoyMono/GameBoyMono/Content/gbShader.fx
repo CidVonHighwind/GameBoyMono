@@ -20,18 +20,18 @@ sampler2D s0
     AddressV = Wrap;
 };
 
-float4 MainPS(float4 pos : SV_POSITION, float4 color1 : COLOR0, float2 coords: TEXCOORD0) : COLOR
+float4 MainPS(float4 pos : SV_POSITION, float4 sColor1 : COLOR0, float2 coords: TEXCOORD0) : COLOR
 {
 	float4 spriteColor = tex2D(s0,coords);
 	
-	if(spriteColor.x < 0.1)
-		return color1;
-	else if(spriteColor.y < 0.1)
-		return color2;
-	else if(spriteColor.z < 0.1)
-		return color3;
-	else
+	if(spriteColor.r < 0.25) // 0
 		return color4;
+	if(spriteColor.r < 0.5)	// 0.33
+		return color3;
+	if(spriteColor.r < 0.75) // 0.66
+		return color2;
+	else
+		return color1;
 }
 
 technique SpriteDrawing
