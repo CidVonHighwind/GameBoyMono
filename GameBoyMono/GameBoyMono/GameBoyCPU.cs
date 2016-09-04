@@ -10,12 +10,9 @@ namespace GameBoyMono
 {
     public partial class GameBoyCPU
     {
-        //private byte[] _generalMemory = new byte[65536];
         public GeneralMemory generalMemory = new GeneralMemory();
         public Cartridge cartridge = new Cartridge();
-
-        public byte[] romBegining;
-
+        
         /* 
          * A-accumulator
          * F-flags
@@ -29,14 +26,10 @@ namespace GameBoyMono
          * C-Carry Flag
          * 0-Not used, always zero
          */
-        public byte reg_A;
-        public byte reg_F;
-        public byte reg_B;
-        public byte reg_C;
-        public byte reg_D;
-        public byte reg_E;
-        public byte reg_H;
-        public byte reg_L;
+        public byte reg_A, reg_F;
+        public byte reg_B, reg_C;
+        public byte reg_D, reg_E;
+        public byte reg_H, reg_L;
 
         public ushort reg_AF { get { return (ushort)(reg_A << 8 | reg_F); } set { reg_A = (byte)(value >> 8); reg_F = (byte)(value & 0xF0); } }
         public ushort reg_BC { get { return (ushort)(reg_B << 8 | reg_C); } set { reg_B = (byte)(value >> 8); reg_C = (byte)(value & 0xFF); } }
@@ -50,20 +43,20 @@ namespace GameBoyMono
 
         byte flag_CBit { get { return (byte)(flag_C ? 1 : 0); } }
 
-        /*
-         * SP - stack point
-         * PC - program counter
-         */
+        // SP - stack point
         public ushort reg_SP;
+        // PC - program counter
         public ushort reg_PC;
 
-        bool CPUHalt;
 
         public byte data8 { get { return generalMemory[reg_PC - 1]; } }
         public ushort data16 { get { return (ushort)(generalMemory[reg_PC - 2] | (generalMemory[reg_PC - 1] << 8)); } }
 
+
+        bool CPUHalt;
+
         // Interrupt Master Enable Flag (write only)
-        public bool IME, cbInstructions;
+        public bool IME;
 
         // list of functions
         public Action[] ops, op_cb;
@@ -74,15 +67,10 @@ namespace GameBoyMono
         int maxCycles = 70224, cycleCount, lastCycleCount;  // 69905 70224
         int lcdCycleCount;
 
-        public bool romMounted, bugFound;
-
-        Timer gbTimer = new Timer();
+        public bool cbInstructions, romMounted, bugFound, renderScreen;
 
         int divCounter, timerCounter;
-
-        string opLog;
-
-
+        
         public byte LY { get { return generalMemory.memory[0xFF44]; } }
         public byte LYC { get { return generalMemory.memory[0xFF45]; } }
         public byte LCDMode { get { return (byte)(generalMemory.memory[0xFF41] & 0x03); } }
@@ -189,7 +177,7 @@ namespace GameBoyMono
 
         public void Update(GameTime gametime)
         {
-            while (cycleCount < maxCycles) // + cycleArray[generalMemory._generalMemory[reg_PC]] 
+            while (cycleCount < maxCycles)
                 CPUCycle();
 
             cycleCount -= maxCycles;
@@ -199,17 +187,20 @@ namespace GameBoyMono
         {
             lastCycleCount = cycleCount;
 
-            // update cycle count
-            cycleCount += cycleArray[generalMemory[reg_PC]];
-
             if (!CPUHalt)
             {
+                // update cycle count
+                if (cbInstructions)
+                    cycleCount += cycleCBArray[generalMemory[reg_PC]];
+                else
+                    cycleCount += cycleArray[generalMemory[reg_PC]];
+
                 // execute next instruction
                 nextInstruction();
             }
             else
             {
-
+                cycleCount += 4;
             }
 
             int oldStat = generalMemory.memory[0xFF41];
@@ -232,6 +223,8 @@ namespace GameBoyMono
                     // v-blank flag
                     if (generalMemory.memory[0xFF44] == 144)
                     {
+                        renderScreen = true;
+
                         // set IF flag
                         generalMemory.memory[0xFF0F] |= 0x01;
                         // disable HALT
@@ -260,9 +253,15 @@ namespace GameBoyMono
             else
             {
                 generalMemory.memory[0xFF41] &= 0xFC;
-                generalMemory.memory[0xFF41] |= 0x01;
-                generalMemory.memory[0xFF44] = 0;
-                lcdCycleCount = 0;
+                //generalMemory.memory[0xFF41] |= 0x01;
+                //generalMemory.memory[0xFF44] = 0;
+                //lcdCycleCount = 0;
+            }
+
+            if (renderScreen)
+            {
+                renderScreen = false;
+                Game1.gbRenderer.Draw();
             }
 
             // set coincidence flag (0:LYC<>LY, 1:LYC=LY)
@@ -353,30 +352,19 @@ namespace GameBoyMono
             if (IME && (generalMemory.memory[0xFFFF] & 0x01) == 0x01 && (generalMemory.memory[0xFF0F] & 0x01) == 0x01)
                 VblankInterrupt();
             // LCD STAT interrupt
-            if (IME && (generalMemory.memory[0xFFFF] & 0x02) == 0x02 && (generalMemory.memory[0xFF0F] & 0x02) == 0x02)
+            else if (IME && (generalMemory.memory[0xFFFF] & 0x02) == 0x02 && (generalMemory.memory[0xFF0F] & 0x02) == 0x02)
                 StatInterrupt();
             // timer overflow interrupt
-            if (IME && (generalMemory.memory[0xFFFF] & 0x04) == 0x04 && (generalMemory.memory[0xFF0F] & 0x04) == 0x04)
+            else if (IME && (generalMemory.memory[0xFFFF] & 0x04) == 0x04 && (generalMemory.memory[0xFF0F] & 0x04) == 0x04)
                 TimerInterrupt();
         }
 
         public void nextInstruction()
         {
-            byte currentInstruction = generalMemory[reg_PC];
             Action action;
-
-            // cb prefix instructions
-            if (cbInstructions)
-            {
-                reg_PC++;
-                action = op_cb[currentInstruction];
-                cbInstructions = false;
-            }
-            else
-            {
-                reg_PC += opLength[generalMemory[reg_PC]];
-                action = ops[currentInstruction];
-            }
+            
+            action = ops[generalMemory[reg_PC]];
+            reg_PC += opLength[generalMemory[reg_PC]];
 
             if (action != null)
             {
@@ -384,6 +372,14 @@ namespace GameBoyMono
                 opName = action.Method.Name;
             }
             else { }
+
+            // cb prefix instructions
+            if (cbInstructions)
+            {
+                cbInstructions = false;
+                op_cb[generalMemory[reg_PC]]();
+                reg_PC++;
+            }
 
             //opLog += "\n" + opName + " " + (((reg_PC - oldPC) == 3) ? data16.ToString() : (((reg_PC - oldPC) == 2) ? data8.ToString() : ""));
         }
@@ -404,7 +400,16 @@ namespace GameBoyMono
             // put the PC 
             generalMemory[--reg_SP] = (byte)(reg_PC >> 8);
             generalMemory[--reg_SP] = (byte)(reg_PC & 0xFF);
+
+            CPUHalt = false;
         }
+
+        /*
+         if interrupts are disabled and a ‘halt‘ instruction is executed, 
+         then halt doesn’t suspend operation but it does cause the PC to
+         stop counting for one instruction.  This is an odd behaviour, 
+         but one we need to take into account for an accurate emulation. 
+         */
 
         public void VblankInterrupt()
         {

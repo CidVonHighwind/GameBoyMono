@@ -378,15 +378,15 @@ namespace GameBoyMono
         public void JR_C_a8() { if (flag_C) { JR_d8(); cycleCount += 4; } }
 
         // POP/PUSH
+        public void POP_AF() { reg_F = (byte)(generalMemory[reg_SP++] & 0xF0); reg_A = generalMemory[reg_SP++]; }
         public void POP_BC() { reg_C = generalMemory[reg_SP++]; reg_B = generalMemory[reg_SP++]; }
         public void POP_DE() { reg_E = generalMemory[reg_SP++]; reg_D = generalMemory[reg_SP++]; }
         public void POP_HL() { reg_L = generalMemory[reg_SP++]; reg_H = generalMemory[reg_SP++]; }
-        public void POP_AF() { reg_F = (byte)(generalMemory[reg_SP++] & 0xF0); reg_A = generalMemory[reg_SP++]; }
 
+        public void PUSH_AF() { generalMemory[--reg_SP] = reg_A; generalMemory[--reg_SP] = reg_F; }
         public void PUSH_BC() { generalMemory[--reg_SP] = reg_B; generalMemory[--reg_SP] = reg_C; }
         public void PUSH_DE() { generalMemory[--reg_SP] = reg_D; generalMemory[--reg_SP] = reg_E; }
         public void PUSH_HL() { generalMemory[--reg_SP] = reg_H; generalMemory[--reg_SP] = reg_L; }
-        public void PUSH_AF() { generalMemory[--reg_SP] = reg_A; generalMemory[--reg_SP] = reg_F; }
 
         // Returns
         public void RET() { reg_PC = (ushort)(generalMemory[reg_SP++] | (generalMemory[reg_SP++] << 8)); }

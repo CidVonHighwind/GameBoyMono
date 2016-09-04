@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace GameBoyMono
 {
-    class ScreenRenderer
+    public class ScreenRenderer
     {
         Texture2D sprTileData0, sprTileData1;
         public RenderTarget2D gbRenderTarget;
@@ -18,7 +18,8 @@ namespace GameBoyMono
 
         Effect gbShader;
 
-        Vector4[] colors = new Vector4[4];
+        Vector4[] bgColors = new Vector4[4];
+        Vector4[] objColors = new Vector4[4];
 
         public void Load(ContentManager Content)
         {
@@ -27,15 +28,20 @@ namespace GameBoyMono
 
             gbShader = Content.Load<Effect>("gbShader");
 
-            colors[0] = new Vector4(1f, 1f, 1, 1);
-            colors[1] = new Vector4(0, 0.66f, 0.66f, 1);
-            colors[2] = new Vector4(0, 0.33f, 0.33f, 1);
-            colors[3] = new Vector4(0, 0, 0, 1);
+            bgColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            bgColors[1] = new Vector4(0.0f, 0.6f, 0.6f, 1.0f);
+            bgColors[2] = new Vector4(0.0f, 0.3f, 0.3f, 1.0f);
+            bgColors[3] = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 
-            gbShader.Parameters["color1"].SetValue(colors[0]);
-            gbShader.Parameters["color2"].SetValue(colors[1]);
-            gbShader.Parameters["color3"].SetValue(colors[2]);
-            gbShader.Parameters["color4"].SetValue(colors[3]);
+            objColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            objColors[1] = new Vector4(0.8f, 0.5f, 0.5f, 1.0f);
+            objColors[2] = new Vector4(0.5f, 0.2f, 0.2f, 1.0f);
+            objColors[3] = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+
+            gbShader.Parameters["color1"].SetValue(bgColors[0]);
+            gbShader.Parameters["color2"].SetValue(bgColors[1]);
+            gbShader.Parameters["color3"].SetValue(bgColors[2]);
+            gbShader.Parameters["color4"].SetValue(bgColors[3]);
 
             gbRenderTarget = new RenderTarget2D(Game1.graphics.GraphicsDevice, 160, 144);
         }
@@ -66,27 +72,27 @@ namespace GameBoyMono
             FF49 - OBP1 - Object Palette 1 Data (R/W): for sprite palett 1
         */
 
-        public void Draw(SpriteBatch spriteBatch)
+        public void Draw()
         {
             if (!debugMode)
                 Game1.graphics.GraphicsDevice.SetRenderTarget(gbRenderTarget);
 
             Game1.graphics.GraphicsDevice.Clear(Color.Pink);
-            spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null, gbShader);
+            Game1.spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null, gbShader);
 
             // draw the tiledata
             int scale = 1;
 
             // set background colors
-            gbShader.Parameters["color1"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);
-            gbShader.Parameters["color2"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03]);
-            gbShader.Parameters["color3"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
-            gbShader.Parameters["color4"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
+            gbShader.Parameters["color1"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);
+            gbShader.Parameters["color2"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03]);
+            gbShader.Parameters["color3"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
+            gbShader.Parameters["color4"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
 
             if (debugMode)
             {
-                spriteBatch.Draw(sprTileData0, new Rectangle(0, 264, sprTileData0.Width * scale, sprTileData0.Height * scale), Color.White);
-                spriteBatch.Draw(sprTileData1, new Rectangle(sprTileData0.Width * scale + 8, 264, sprTileData1.Width * scale, sprTileData1.Height * scale), Color.White);
+                Game1.spriteBatch.Draw(sprTileData0, new Rectangle(0, 264, sprTileData0.Width * scale, sprTileData0.Height * scale), Color.White);
+                Game1.spriteBatch.Draw(sprTileData1, new Rectangle(sprTileData0.Width * scale + 8, 264, sprTileData1.Width * scale, sprTileData1.Height * scale), Color.White);
             }
 
             // LCD Display Enable
@@ -119,7 +125,7 @@ namespace GameBoyMono
             int int2 = (Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03;
             int int3 = (Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03;
             int int4 = (Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03;
-            
+
             int startAddress = LCDC_Bit3 ? 0x9C00 : 0x9800;
             int endAddress = LCDC_Bit3 ? 0x9FFF : 0x9BFF;
 
@@ -139,7 +145,7 @@ namespace GameBoyMono
                 if (posY + 8 < 0)
                     posY += 256;
 
-                spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(posX * scale, posY * scale, 8 * scale, 8 * scale),
+                Game1.spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(posX * scale, posY * scale, 8 * scale, 8 * scale),
                     new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
             }
 
@@ -162,14 +168,14 @@ namespace GameBoyMono
 
                     int posX = (i - startAddress) % 32;
                     int posY = (i - startAddress) / 32;
-                    spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(WX + posX * 8, WY + posY * 8 - 7, 8, 8),
+                    Game1.spriteBatch.Draw(LCDC_Bit4 ? sprTileData0 : sprTileData1, new Rectangle(WX + posX * 8, WY + posY * 8 - 7, 8, 8),
                         new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
                 }
             }
 
             bool LCDC_Bit2 = (LCDC & 0x04) == 0x04; // obj size (0=8x8, 1=8x16)
 
-            gbShader.Parameters["color1"].SetValue(new Vector4(0, 0, 0, 0));
+
             // draw the objects
             for (int i = 0xFE00; i < 0xFE9F; i += 4)
             {
@@ -189,33 +195,39 @@ namespace GameBoyMono
 
                 SpriteEffects sprEffect = SpriteEffects.None;
                 if ((attributes & 0x40) == 0x40)
-                    sprEffect = SpriteEffects.FlipVertically;
+                    sprEffect |= SpriteEffects.FlipVertically;
                 if ((attributes & 0x20) == 0x20)
-                    sprEffect = SpriteEffects.FlipHorizontally;
+                    sprEffect |= SpriteEffects.FlipHorizontally;
+
+                // set object colors
+                gbShader.Parameters["color1"].SetValue(new Vector4(0, 0, 0, 0));
+                gbShader.Parameters["color2"].SetValue(objColors[(Game1.gbCPU.generalMemory[0xFF48 + ((attributes >> 4) & 0x01)] >> 2) & 0x03]);
+                gbShader.Parameters["color3"].SetValue(objColors[(Game1.gbCPU.generalMemory[0xFF48 + ((attributes >> 4) & 0x01)] >> 4) & 0x03]);
+                gbShader.Parameters["color4"].SetValue(objColors[(Game1.gbCPU.generalMemory[0xFF48 + ((attributes >> 4) & 0x01)] >> 6) & 0x03]);
 
                 if (LCDC_Bit2)
                     tileNumber = (byte)(tileNumber & 0xFE);
 
                 // draw the tile
-                spriteBatch.Draw(sprTileData0, new Rectangle(posX, posY, 8 * scale, 8 * scale), new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8),
+                Game1.spriteBatch.Draw(sprTileData0, new Rectangle(posX, posY, 8 * scale, 8 * scale), new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8),
                     Color.White, 0, Vector2.Zero, sprEffect, 0);
 
                 // draw the second part of the sprite if in 8x16 mode
                 if (LCDC_Bit2)
-                    spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16 + 8, 8 * scale, 8 * scale),
+                    Game1.spriteBatch.Draw(sprTileData0, new Rectangle(posX - 8, posY - 16 + 8, 8 * scale, 8 * scale),
                         new Rectangle(((tileNumber + 1) % 16) * 8, ((tileNumber + 1) / 16) * 8, 8, 8), Color.White, 0, Vector2.Zero, sprEffect, 0);
             }
 
-            spriteBatch.End();
+            Game1.spriteBatch.End();
 
             Game1.graphics.GraphicsDevice.SetRenderTarget(null);
 
-            spriteBatch.Begin();
+            Game1.spriteBatch.Begin();
 
             // draw the screenPosition
             //spriteBatch.Draw(Game1.sprWhite, new Rectangle(0, 0, 160, 144), Color.Green * 0.25f);
 
-            spriteBatch.End();
+            Game1.spriteBatch.End();
         }
 
         Color[] colorData;

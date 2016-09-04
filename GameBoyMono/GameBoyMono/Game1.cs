@@ -8,39 +8,30 @@ namespace GameBoyMono
     public class Game1 : Game
     {
         public static GraphicsDeviceManager graphics;
-        SpriteBatch spriteBatch;
+        public static SpriteBatch spriteBatch;
 
+        public static Texture2D sprWhite, sprMemory;
         SpriteFont font0;
         Effect gbShader;
+        
+        public static GameBoyCPU gbCPU = new GameBoyCPU();
+        public static ScreenRenderer gbRenderer = new ScreenRenderer();
+
+        RenderTarget2D shaderRenderTarget;
+        Rectangle renderRectangle;
 
         public static string[] parameter;
-
+        
         string romName;
-        byte cartridgeType;
-        byte romSize;
-        byte ramSize;
-        byte destinationCode;
-
-        public static GameBoyCPU gbCPU = new GameBoyCPU();
-        public static Texture2D sprWhite, sprMemory;
-
-        ScreenRenderer gbRenderer = new ScreenRenderer();
-
-        string logString;
-
-        int stepCount;
-
-        bool debugMode = true;
-
         float renderScale;
-        Rectangle renderRectangle;
-        RenderTarget2D shaderRenderTarget;
-
+        byte cartridgeType, romSize, ramSize, destinationCode;
+        bool debugMode = false;
+        
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferWidth = 1600;
-            graphics.PreferredBackBufferHeight = 1024;
+            graphics.PreferredBackBufferHeight = 1008;// 1024;
             graphics.ApplyChanges();
             Content.RootDirectory = "Content";
 
@@ -100,6 +91,8 @@ namespace GameBoyMono
 
         protected override void Update(GameTime gameTime)
         {
+            gbRenderer.debugMode = debugMode;
+
             // update the cpu
             gbCPU.Update(gameTime);
 
@@ -131,8 +124,7 @@ namespace GameBoyMono
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             
-            gbRenderer.debugMode = debugMode;
-            gbRenderer.Draw(spriteBatch);
+            //gbRenderer.Draw();
 
             if (!debugMode)
             {
@@ -159,7 +151,6 @@ namespace GameBoyMono
             }
             else
             {
-
                 string strDebugger = "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
                                         "BC: 0x" + string.Format("{0:X}", gbCPU.reg_BC) + "\n" +
                                         "DE: 0x" + string.Format("{0:X}", gbCPU.reg_DE) + "\n" +
@@ -247,23 +238,13 @@ namespace GameBoyMono
 
         void LoadRom(string path)
         {
-            using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read))
-            {
-                using (BinaryReader romReader = new BinaryReader(fileStream))
-                {
-                    gbCPU.cartridge.ROM = new byte[romReader.BaseStream.Length];
-
-                    // load the game
-                    for (int i = 0; i < romReader.BaseStream.Length; i++)
-                        gbCPU.cartridge.ROM[i] = romReader.ReadByte();
-                }
-            }
+            gbCPU.cartridge.ROM = File.ReadAllBytes(path);
 
             // 0143 - CGB Flag
             // 80h - Game supports CGB functions, but works on old gameboys also.
             // C0h - Game works on CGB only (physically the same as 80h).
 
-            // name
+            // load the name
             for (int i = 0x0134; i < 0x0144; i++)
             {
                 if (gbCPU.generalMemory.memory[i] != 0)

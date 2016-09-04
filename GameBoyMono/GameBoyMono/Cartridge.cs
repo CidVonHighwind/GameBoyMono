@@ -10,7 +10,7 @@ namespace GameBoyMono
     {
         public byte[] ROM;
         byte type;
-        byte selectedROMBank;
+        byte selectedROMBank = 1;
         byte selectedRAMBank;
 
         bool enableRAM;
