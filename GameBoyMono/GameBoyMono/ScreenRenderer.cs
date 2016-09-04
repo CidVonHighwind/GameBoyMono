@@ -77,6 +77,12 @@ namespace GameBoyMono
             // draw the tiledata
             int scale = 1;
 
+            // set background colors
+            gbShader.Parameters["color1"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);
+            gbShader.Parameters["color2"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03]);
+            gbShader.Parameters["color3"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
+            gbShader.Parameters["color4"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
+
             if (debugMode)
             {
                 spriteBatch.Draw(sprTileData0, new Rectangle(0, 264, sprTileData0.Width * scale, sprTileData0.Height * scale), Color.White);
@@ -113,13 +119,7 @@ namespace GameBoyMono
             int int2 = (Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03;
             int int3 = (Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03;
             int int4 = (Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03;
-
-            // set the shade for the colors
-            gbShader.Parameters["color1"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);
-            gbShader.Parameters["color2"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03]);
-            gbShader.Parameters["color3"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
-            gbShader.Parameters["color4"].SetValue(colors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
-
+            
             int startAddress = LCDC_Bit3 ? 0x9C00 : 0x9800;
             int endAddress = LCDC_Bit3 ? 0x9FFF : 0x9BFF;
 

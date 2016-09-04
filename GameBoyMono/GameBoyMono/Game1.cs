@@ -251,9 +251,11 @@ namespace GameBoyMono
             {
                 using (BinaryReader romReader = new BinaryReader(fileStream))
                 {
-                    // load the first junk into the general memory
-                    for (int i = 0; i < 0x8000; i++)
-                        gbCPU.generalMemory.memory[i] = romReader.ReadByte();
+                    gbCPU.cartridge.ROM = new byte[romReader.BaseStream.Length];
+
+                    // load the game
+                    for (int i = 0; i < romReader.BaseStream.Length; i++)
+                        gbCPU.cartridge.ROM[i] = romReader.ReadByte();
                 }
             }
 

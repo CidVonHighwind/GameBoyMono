@@ -12,6 +12,7 @@ namespace GameBoyMono
     {
         //private byte[] _generalMemory = new byte[65536];
         public GeneralMemory generalMemory = new GeneralMemory();
+        public Cartridge cartridge = new Cartridge();
 
         public byte[] romBegining;
 
@@ -37,15 +38,15 @@ namespace GameBoyMono
         public byte reg_H;
         public byte reg_L;
 
-        public ushort reg_AF { get { return (ushort)(reg_A << 8 | reg_F); } set { reg_A = (byte)(value >> 8); reg_F = (byte)(value & 0xFF); } }
+        public ushort reg_AF { get { return (ushort)(reg_A << 8 | reg_F); } set { reg_A = (byte)(value >> 8); reg_F = (byte)(value & 0xF0); } }
         public ushort reg_BC { get { return (ushort)(reg_B << 8 | reg_C); } set { reg_B = (byte)(value >> 8); reg_C = (byte)(value & 0xFF); } }
         public ushort reg_DE { get { return (ushort)(reg_D << 8 | reg_E); } set { reg_D = (byte)(value >> 8); reg_E = (byte)(value & 0xFF); } }
         public ushort reg_HL { get { return (ushort)(reg_H << 8 | reg_L); } set { reg_H = (byte)(value >> 8); reg_L = (byte)(value & 0xFF); } }
 
-        public bool flag_Z { get { return (reg_F & 0x80) == 0x80; } set { reg_F = (byte)((reg_F & 0x7F) | (value ? 0x80 : 0x00)); } }
-        public bool flag_N { get { return (reg_F & 0x40) == 0x40; } set { reg_F = (byte)((reg_F & 0xBF) | (value ? 0x40 : 0x00)); } }
-        public bool flag_H { get { return (reg_F & 0x20) == 0x20; } set { reg_F = (byte)((reg_F & 0xDF) | (value ? 0x20 : 0x00)); } }
-        public bool flag_C { get { return (reg_F & 0x10) == 0x10; } set { reg_F = (byte)((reg_F & 0xEF) | (value ? 0x10 : 0x00)); } }
+        public bool flag_Z { get { return (reg_F & 0x80) == 0x80; } set { reg_F = (byte)((reg_F & 0x70) | (value ? 0x80 : 0x00)); } }
+        public bool flag_N { get { return (reg_F & 0x40) == 0x40; } set { reg_F = (byte)((reg_F & 0xB0) | (value ? 0x40 : 0x00)); } }
+        public bool flag_H { get { return (reg_F & 0x20) == 0x20; } set { reg_F = (byte)((reg_F & 0xD0) | (value ? 0x20 : 0x00)); } }
+        public bool flag_C { get { return (reg_F & 0x10) == 0x10; } set { reg_F = (byte)((reg_F & 0xE0) | (value ? 0x10 : 0x00)); } }
 
         byte flag_CBit { get { return (byte)(flag_C ? 1 : 0); } }
 

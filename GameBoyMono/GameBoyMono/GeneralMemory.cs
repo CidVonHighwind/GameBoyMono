@@ -25,6 +25,12 @@ namespace GameBoyMono
                     Game1.gbCPU.romMounted = false;
                 }
 
+                // Cartridge
+                if (index < 0x8000)
+                {
+                    return Game1.gbCPU.cartridge[index];
+                }
+
                 // shadow ram
                 if (0xE000 <= index && index <= 0xFDFF)
                     return memory[index - 0x2000];
@@ -57,7 +63,7 @@ namespace GameBoyMono
                 // ROM
                 if (index < 0x8000)
                 {
-
+                    Game1.gbCPU.cartridge[index] = value;
                 }
                 // 8KB Video RAM (VRAM)
                 else if (index < 0xA000)
