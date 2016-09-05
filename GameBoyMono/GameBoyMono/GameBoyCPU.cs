@@ -220,6 +220,9 @@ namespace GameBoyMono
                     if (generalMemory.memory[0xFF44] > 153)
                         generalMemory.memory[0xFF44] = 0;
 
+                    if (generalMemory.memory[0xFF44] < 144)
+                        Game1.gbRenderer.RenderLine(generalMemory.memory[0xFF44]);
+
                     // v-blank flag
                     if (generalMemory.memory[0xFF44] == 144)
                     {

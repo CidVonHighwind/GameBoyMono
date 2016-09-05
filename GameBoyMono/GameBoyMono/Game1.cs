@@ -25,7 +25,7 @@ namespace GameBoyMono
         string romName;
         float renderScale;
         byte cartridgeType, romSize, ramSize, destinationCode;
-        bool debugMode = false;
+        bool debugMode = true;
         
         public Game1()
         {
@@ -124,8 +124,6 @@ namespace GameBoyMono
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             
-            //gbRenderer.Draw();
-
             if (!debugMode)
             {
                 gbShader.Parameters["spriteWidth"].SetValue(shaderRenderTarget.Width);
@@ -141,7 +139,11 @@ namespace GameBoyMono
                 spriteBatch.End();
                 graphics.GraphicsDevice.SetRenderTarget(null);
             }
-            
+            else
+            {
+                gbRenderer.Draw();
+            }
+
             spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
 
             if (!debugMode)
@@ -163,7 +165,13 @@ namespace GameBoyMono
                 // debugger
                 spriteBatch.DrawString(font0, strDebugger, new Vector2(0, 1024 - font0.MeasureString(strDebugger).Y), Color.White);
 
-                spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
+
+                spriteBatch.Draw(Game1.sprWhite, new Rectangle(260, 0, 170, 154), Color.Red);
+
+                gbRenderer.sprOutput.SetData(gbRenderer.colorData);
+                spriteBatch.Draw(gbRenderer.sprOutput, new Rectangle(265, 5, 160, 144), Color.White);
+
+                //spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
 
                 //spriteBatch.DrawString(font0, "" + gbCPU.reg_PC, new Vector2(0, 0), Color.Red);
 
