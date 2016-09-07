@@ -25,13 +25,13 @@ float4 MainPS(float4 pos : SV_POSITION, float4 sColor1 : COLOR0, float2 coords: 
 	float4 spriteColor = tex2D(s0,coords);
 	
 	if(spriteColor.r < 0.25) // 0
-		return color4;
+		return color4 * spriteColor.a;
 	if(spriteColor.r < 0.5)	// 0.33
-		return color3;
+		return color3 * spriteColor.a;
 	if(spriteColor.r < 0.75) // 0.66
-		return color2;
+		return color2 * spriteColor.a;
 	else
-		return color1;
+		return color1 * spriteColor.a;
 }
 
 technique SpriteDrawing

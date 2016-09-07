@@ -69,6 +69,9 @@ namespace GameBoyMono
                 else if (index < 0xA000)
                 {
                     memory[index] = value;
+
+                    if (index < 0x97FF)
+                        Game1.gbRenderer.updateTileset = true;
                 }
                 // External Expanision Working RAM
                 else if (index < 0xC000)

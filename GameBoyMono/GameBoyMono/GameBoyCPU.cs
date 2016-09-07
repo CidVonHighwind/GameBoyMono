@@ -12,7 +12,7 @@ namespace GameBoyMono
     {
         public GeneralMemory generalMemory = new GeneralMemory();
         public Cartridge cartridge = new Cartridge();
-        
+
         /* 
          * A-accumulator
          * F-flags
@@ -48,10 +48,8 @@ namespace GameBoyMono
         // PC - program counter
         public ushort reg_PC;
 
-
         public byte data8 { get { return generalMemory[reg_PC - 1]; } }
-        public ushort data16 { get { return (ushort)(generalMemory[reg_PC - 2] | (generalMemory[reg_PC - 1] << 8)); } }
-
+        public ushort data16 { get { return (ushort)((generalMemory[reg_PC - 1] << 8) | generalMemory[reg_PC - 2]); } }
 
         bool CPUHalt;
 
@@ -61,22 +59,20 @@ namespace GameBoyMono
         // list of functions
         public Action[] ops, op_cb;
 
-        string opName;
-
         //  4194304Hz / 59.73fps = 70221
         int maxCycles = 70224, cycleCount, lastCycleCount;  // 69905 70224
         int lcdCycleCount;
+        int lcdCycleTime;
 
-        public bool cbInstructions, romMounted, bugFound, renderScreen;
+        public bool romMounted, bugFound, renderScreen;
 
         int divCounter, timerCounter;
-        
+
         public byte LY { get { return generalMemory.memory[0xFF44]; } }
         public byte LYC { get { return generalMemory.memory[0xFF45]; } }
         public byte LCDMode { get { return (byte)(generalMemory.memory[0xFF41] & 0x03); } }
 
         public byte Stat { get { return generalMemory.memory[0xFF41]; } }
-
 
         byte[] cycleArray = new byte[] {    04,12,08,08,04,04,08,04,20,08,08,08,04,04,08,04,
                                             04,12,08,08,04,04,08,04,12,08,08,08,04,04,08,04,
@@ -90,7 +86,7 @@ namespace GameBoyMono
                                             04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
                                             04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
                                             04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
-                                            08,12,12,16,12,16,08,16,08,16,12,04,12,24,08,16,
+                                            08,12,12,16,12,16,08,16,08,16,12,00,12,24,08,16,
                                             08,12,12,00,12,16,08,16,08,16,12,00,12,00,08,16,
                                             12,12,08,00,00,16,08,16,16,04,16,00,00,00,08,16,
                                             12,12,08,04,00,16,08,16,12,08,16,04,00,00,08,16};
@@ -112,22 +108,22 @@ namespace GameBoyMono
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
                                             08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08 };
 
-        public byte[] opLength = new byte[] {   1,3,1,1,1,1,2,1,3,1,1,1,1,1,2,1,
-                                                1,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
-                                                2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
-                                                2,3,1,1,1,1,2,1,2,1,1,1,1,1,2,1,
-                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-                                                1,1,3,3,3,1,2,1,1,1,3,1,3,3,2,1,
-                                                1,1,3,0,3,1,2,1,1,1,3,0,3,0,2,1,
-                                                2,1,1,0,0,1,2,1,2,1,3,0,0,0,2,1,
-                                                2,1,1,1,0,1,2,1,2,1,3,1,0,0,2,1 };
+        byte[] opLength = new byte[] {      01,03,01,01,01,01,02,01,03,01,01,01,01,01,02,01,
+                                            01,03,01,01,01,01,02,01,02,01,01,01,01,01,02,01,
+                                            02,03,01,01,01,01,02,01,02,01,01,01,01,01,02,01,
+                                            02,03,01,01,01,01,02,01,02,01,01,01,01,01,02,01,
+                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
+                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
+                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
+                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
+                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
+                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
+                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
+                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
+                                            01,01,03,03,03,01,02,01,01,01,03,01,03,03,02,01,
+                                            01,01,03,00,03,01,02,01,01,01,03,00,03,00,02,01,
+                                            02,01,01,00,00,01,02,01,02,01,03,00,00,00,02,01,
+                                            02,01,01,01,00,01,02,01,02,01,03,01,00,00,02,01 };
 
         public GameBoyCPU()
         {
@@ -144,7 +140,7 @@ namespace GameBoyMono
                 SUB_B, SUB_C, SUB_D, SUB_E, SUB_H, SUB_L, SUB_aHL, SUB_A, SBC_A_B, SBC_A_C, SBC_A_D, SBC_A_E, SBC_A_H, SBC_A_L, SBC_A_aHL, SBC_A_A,
                 AND_B, AND_C, AND_D, AND_E, AND_H, AND_L, AND_aHL, AND_A, XOR_B, XOR_C, XOR_D, XOR_E, XOR_H, XOR_L, XOR_aHL, XOR_A,
                 OR_B, OR_C, OR_D, OR_E, OR_H, OR_L, OR_aHL, OR_A, CP_B, CP_C, CP_D, CP_E, CP_H, CP_L, CP_aHL, CP_A,
-                RET_NZ, POP_BC, JP_NZ_a16, JP_a16, CALL_NZ_a16, PUSH_BC, ADD_A_d8, RST_00H, RET_Z, RET, JP_Z_a16, PREFIX_CB, CALL_Z_a16, CALL_a16, ADC_A_d8, RST_08H,
+                RET_NZ, POP_BC, JP_NZ_a16, JP_a16, CALL_NZ_a16, PUSH_BC, ADD_A_d8, RST_00H, RET_Z, RET, JP_Z_a16, null, CALL_Z_a16, CALL_a16, ADC_A_d8, RST_08H,
                 RET_NC, POP_DE, JP_NC_a16, null, CALL_NC_a16, PUSH_DE, SUB_d8, RST_10H, RET_C, RETI, JP_C_a16, null, CALL_C_a16, null, SBC_A_d8, RST_18H,
                 LDH_a8_A, POP_HL, LD_aC_A, null, null, PUSH_HL, AND_d8, RST_20H, ADD_SP_r8, JP_aHL, LD_a16_A, null, null, null, XOR_d8, RST_28H,
                 LDH_A_a8, POP_AF, LD_A_aC, DI, null, PUSH_AF, OR_d8, RST_30H, LD_HL_SPr8, LD_SP_HL, LD_A_a16, EI, null, null, CP_d8, RST_38H};
@@ -189,14 +185,8 @@ namespace GameBoyMono
 
             if (!CPUHalt)
             {
-                // update cycle count
-                if (cbInstructions)
-                    cycleCount += cycleCBArray[generalMemory[reg_PC]];
-                else
-                    cycleCount += cycleArray[generalMemory[reg_PC]];
-
                 // execute next instruction
-                nextInstruction();
+                executeInstruction();
             }
             else
             {
@@ -210,15 +200,23 @@ namespace GameBoyMono
             {
                 lcdCycleCount += (cycleCount - lastCycleCount);
 
-                if (lcdCycleCount > 456)
+                // http://gameboy.mongenel.com/dmg/istat98.txt
+
+                if (lcdCycleCount > lcdCycleTime)
                 {
-                    lcdCycleCount -= 456;
+                    lcdCycleCount -= lcdCycleTime;
 
                     // set the LY byte
                     generalMemory.memory[0xFF44]++;
                     // reste LCD
                     if (generalMemory.memory[0xFF44] > 153)
                         generalMemory.memory[0xFF44] = 0;
+
+                    lcdCycleTime = 456;
+                    if (generalMemory[0xFF44] == 0x98)
+                        lcdCycleTime = 56;
+                    else if (generalMemory[0xFF44] == 0x99)
+                        lcdCycleTime = 856;
 
                     if (generalMemory.memory[0xFF44] < 144)
                         Game1.gbRenderer.RenderLine(generalMemory.memory[0xFF44]);
@@ -236,7 +234,7 @@ namespace GameBoyMono
                 }
 
                 // set mode flag
-                // mode 2,3,0 cycle
+                // mode 2,03,0 cycle
                 // cycle: 456 clks * 144
                 // 2: 77-84     (80)    read oam memory
                 // 3: 169-175   (172)   transf data to lcd
@@ -362,29 +360,28 @@ namespace GameBoyMono
                 TimerInterrupt();
         }
 
-        public void nextInstruction()
+        int currentInstruction;
+        public void executeInstruction()
         {
-            Action action;
-            
-            action = ops[generalMemory[reg_PC]];
+            currentInstruction = reg_PC;
+
+            // update cycle count
+            cycleCount += cycleArray[generalMemory[reg_PC]];
             reg_PC += opLength[generalMemory[reg_PC]];
 
-            if (action != null)
+            // execute
+            if (ops[generalMemory[currentInstruction]] != null)
             {
-                action();
-                opName = action.Method.Name;
+                ops[generalMemory[currentInstruction]]();
             }
-            else { }
-
-            // cb prefix instructions
-            if (cbInstructions)
+            // cb instruction
+            else if (generalMemory[currentInstruction] == 0xCB)
             {
-                cbInstructions = false;
+                cycleCount += cycleCBArray[generalMemory[reg_PC]];
                 op_cb[generalMemory[reg_PC]]();
                 reg_PC++;
             }
-
-            //opLog += "\n" + opName + " " + (((reg_PC - oldPC) == 3) ? data16.ToString() : (((reg_PC - oldPC) == 2) ? data8.ToString() : ""));
+            else { }
         }
 
         /*

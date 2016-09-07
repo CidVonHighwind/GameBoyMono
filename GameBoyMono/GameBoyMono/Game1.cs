@@ -13,7 +13,7 @@ namespace GameBoyMono
         public static Texture2D sprWhite, sprMemory;
         SpriteFont font0;
         Effect gbShader;
-        
+
         public static GameBoyCPU gbCPU = new GameBoyCPU();
         public static ScreenRenderer gbRenderer = new ScreenRenderer();
 
@@ -21,12 +21,12 @@ namespace GameBoyMono
         Rectangle renderRectangle;
 
         public static string[] parameter;
-        
+
         string romName;
         float renderScale;
         byte cartridgeType, romSize, ramSize, destinationCode;
         bool debugMode = true;
-        
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -112,7 +112,10 @@ namespace GameBoyMono
 
             if (debugMode)
                 UpdateSprMemory();
-            
+
+            if (InputHandler.KeyPressed(Keys.F1))
+                debugMode = !debugMode;
+
             // update the renderer
             gbRenderer.Update();
 
@@ -123,7 +126,7 @@ namespace GameBoyMono
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            
+
             if (!debugMode)
             {
                 gbShader.Parameters["spriteWidth"].SetValue(shaderRenderTarget.Width);
@@ -165,26 +168,7 @@ namespace GameBoyMono
                 // debugger
                 spriteBatch.DrawString(font0, strDebugger, new Vector2(0, 1024 - font0.MeasureString(strDebugger).Y), Color.White);
 
-
-                spriteBatch.Draw(Game1.sprWhite, new Rectangle(260, 0, 170, 154), Color.Red);
-
-                gbRenderer.sprOutput.SetData(gbRenderer.colorData);
-                spriteBatch.Draw(gbRenderer.sprOutput, new Rectangle(265, 5, 160, 144), Color.White);
-
                 //spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
-
-                //spriteBatch.DrawString(font0, "" + gbCPU.reg_PC, new Vector2(0, 0), Color.Red);
-
-                //for (int y = 0; y < 16; y++)
-                //{
-                //    for (int x = 0; x < 16; x++)
-                //    {
-                //        System.Action action = gbCPU.ops[x + y * 16];
-                //        if (action != null)
-                //            spriteBatch.DrawString(font0, action.Method.Name + "\n" + gbCPU.opLength[x+y*16], 
-                //                new Vector2(30 + x * 83 + 41 - (int)(font0.MeasureString(action.Method.Name).X / 2), 20 + y * 40), Color.White);
-                //    }
-                //}
             }
 
             spriteBatch.End();

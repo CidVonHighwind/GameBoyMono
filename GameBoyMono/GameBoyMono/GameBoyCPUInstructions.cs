@@ -14,7 +14,6 @@ namespace GameBoyMono
         public void NOP() { }
         public void STOP() { }
         public void HALT() { CPUHalt = true; }
-        public void PREFIX_CB() { cbInstructions = true; }
         public void DI() { IME = false; }
         public void EI() { IME = true; }
 
