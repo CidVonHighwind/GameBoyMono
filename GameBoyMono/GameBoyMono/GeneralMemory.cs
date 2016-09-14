@@ -101,6 +101,8 @@ namespace GameBoyMono
                 // I/O Ports
                 else if (index < 0xFF80)
                 {
+                    Game1.gbCPU.cycleCount = Game1.gbCPU.cycleCount;
+
                     // reset div
                     if (index == 0xFF04)
                     {
@@ -118,6 +120,18 @@ namespace GameBoyMono
                     }
                     // FF41 bit 2: match
                     //  Executing a write instruction for the match flag resets that flag but does not change the mode flag.
+                    
+                    // Sound stuff
+                    else if (index == 0xFF10)
+                    { }
+                    else if (index == 0xFF11)
+                    { }
+                    else if (index == 0xFF12)
+                    { }
+                    else if (index == 0xFF13)
+                    { }
+                    else if (index == 0xFF14)
+                    { }
 
                     // LCD
                     else if (index == 0xFF44)
@@ -148,12 +162,12 @@ namespace GameBoyMono
                     }
                 }
                 // High RAM (HRAM)
-                else if(index < 0xFFFF)
+                else if (index < 0xFFFF)
                 {
                     memory[index] = value;
                 }
                 // Interrupt Enable Register
-                else if(index <= 0xFFFF)
+                else if (index <= 0xFFFF)
                 {
                     memory[index] = value;
                 }

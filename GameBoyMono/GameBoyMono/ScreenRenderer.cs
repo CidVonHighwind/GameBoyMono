@@ -55,8 +55,11 @@ namespace GameBoyMono
 
         public void Update()
         {
-            if(updateTileset)
+            if (updateTileset)
+            {
+                updateTileset = false;
                 LoadTexture(ref sprTileData);
+            }
         }
 
         /*
@@ -88,7 +91,7 @@ namespace GameBoyMono
             Game1.spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null, gbShader);
 
             // draw the tiledata
-            int scale = debugMode ? 1 : 2;
+            int scale = debugMode ? 2 : 1;
 
             // set background colors
             gbShader.Parameters["color1"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);

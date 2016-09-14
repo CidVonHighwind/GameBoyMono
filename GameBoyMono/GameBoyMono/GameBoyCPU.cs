@@ -60,7 +60,7 @@ namespace GameBoyMono
         public Action[] ops, op_cb;
 
         //  4194304Hz / 59.73fps = 70221
-        int maxCycles = 70224, cycleCount, lastCycleCount;  // 69905 70224
+        public int maxCycles = 70224, cycleCount, lastCycleCount;  // 69905 70224
         int lcdCycleCount;
         int lcdCycleTime;
 
@@ -171,10 +171,14 @@ namespace GameBoyMono
             romMounted = true;
         }
 
+        public int updateCount;
+
         public void Update(GameTime gametime)
         {
             while (cycleCount < maxCycles)
                 CPUCycle();
+
+            updateCount++;
 
             cycleCount -= maxCycles;
         }

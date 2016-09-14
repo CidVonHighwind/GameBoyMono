@@ -135,9 +135,13 @@ namespace GameBoyMono
 
                 graphics.GraphicsDevice.SetRenderTarget(shaderRenderTarget);
                 graphics.GraphicsDevice.Clear(Color.White);
-                spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
 
-                spriteBatch.Draw(gbRenderer.gbRenderTarget, new Rectangle(0, 0, shaderRenderTarget.Width, shaderRenderTarget.Height), new Color(142, 150, 114));
+                if (InputHandler.KeyDown(Keys.Q))
+                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null);
+                else
+                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
+
+                spriteBatch.Draw(gbRenderer.gbRenderTarget, new Rectangle(0, 0, shaderRenderTarget.Width, shaderRenderTarget.Height), Color.White);
 
                 spriteBatch.End();
                 graphics.GraphicsDevice.SetRenderTarget(null);
@@ -249,6 +253,29 @@ namespace GameBoyMono
             romSize = gbCPU.generalMemory.memory[0x0148];
             ramSize = gbCPU.generalMemory.memory[0x0149];
             destinationCode = gbCPU.generalMemory.memory[0x014A];
+        }
+
+        void SaveState(string path)
+        {
+            using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write))
+            {
+                using(BinaryWriter writer = new BinaryWriter(fileStream))
+                {
+                    writer.Write(gbCPU.reg_PC);
+                    writer.Write(gbCPU.reg_SP);
+
+                    writer.Write(gbCPU.reg_AF);
+                    writer.Write(gbCPU.reg_BC);
+                    writer.Write(gbCPU.reg_DE);
+                    writer.Write(gbCPU.reg_HL);
+                    
+                }
+            }
+        }
+
+        void LoadState()
+        {
+
         }
 
         //void LoadRamDump(string path)
