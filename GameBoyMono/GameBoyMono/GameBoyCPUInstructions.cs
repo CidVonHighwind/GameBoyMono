@@ -251,7 +251,7 @@ namespace GameBoyMono
         public void ADD_HL_SP() { flag_N = false; flag_H = ((reg_HL & 0x0FFF) + (reg_SP & 0x0FFF)) > 0x0FFF; flag_C = (reg_HL + reg_SP) > 0xFFFF; reg_HL += reg_SP; }
 
         // SUB 8bit
-        public void SUB_A() { flag_H = (reg_A & 0x0F) < (reg_A & 0x0F); flag_C = reg_A < reg_A; reg_A -= reg_A; flag_Z = reg_A == 0x00; flag_N = true; }
+        public void SUB_A() { flag_H = (reg_A & 0x0F) < (reg_A & 0x0F); flag_C = false; reg_A -= reg_A; flag_Z = reg_A == 0x00; flag_N = true; }
         public void SUB_B() { flag_H = (reg_A & 0x0F) < (reg_B & 0x0F); flag_C = reg_A < reg_B; reg_A -= reg_B; flag_Z = reg_A == 0x00; flag_N = true; }
         public void SUB_C() { flag_H = (reg_A & 0x0F) < (reg_C & 0x0F); flag_C = reg_A < reg_C; reg_A -= reg_C; flag_Z = reg_A == 0x00; flag_N = true; }
         public void SUB_D() { flag_H = (reg_A & 0x0F) < (reg_D & 0x0F); flag_C = reg_A < reg_D; reg_A -= reg_D; flag_Z = reg_A == 0x00; flag_N = true; }
@@ -314,7 +314,7 @@ namespace GameBoyMono
         public void XOR_aHL() { reg_A ^= generalMemory[reg_HL]; flag_Z = reg_A == 0x00; flag_N = false; flag_H = false; flag_C = false; }
 
         // CP
-        public void CP_A() { flag_Z = reg_A == reg_A; flag_N = true; flag_H = (reg_A & 0x0F) < (reg_A & 0x0F); flag_C = reg_A < reg_A; }
+        public void CP_A() { flag_Z = true; flag_N = true; flag_H = (reg_A & 0x0F) < (reg_A & 0x0F); flag_C = false; }
         public void CP_B() { flag_Z = reg_A == reg_B; flag_N = true; flag_H = (reg_A & 0x0F) < (reg_B & 0x0F); flag_C = reg_A < reg_B; }
         public void CP_C() { flag_Z = reg_A == reg_C; flag_N = true; flag_H = (reg_A & 0x0F) < (reg_C & 0x0F); flag_C = reg_A < reg_C; }
         public void CP_D() { flag_Z = reg_A == reg_D; flag_N = true; flag_H = (reg_A & 0x0F) < (reg_D & 0x0F); flag_C = reg_A < reg_D; }

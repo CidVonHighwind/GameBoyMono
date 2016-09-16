@@ -24,11 +24,17 @@ namespace GameBoyMono
 
         public static string[] parameter;
 
-        string romName;
         float renderScale;
-        byte cartridgeType, romSize, ramSize, destinationCode;
         bool debugMode = true;
-        
+
+        string[] cartridgeTypeStrings = new string[] {
+            "ROM ONLY", "MBC1", "MBC1+RAM", "MBC1+RAM+BATTERY", "ERROR", "MBC2", "MBC2+B", "ERROR", "ROM+RAM", "ROM+RAM+BATTERY",
+            "ERROR", "MMM01", "MMM01+RAM", "MMM01+RAM+BATTERY", "ERROR", "MBC3+TIMER+BATTERY", "MBC3", "MBC3+RAM",
+            "MBC3+RAM+BATTERY", "MBC3+RAM+BATTERY", "ERROR", "MBC4", "MBC4+RAM", "MBC4+RAM+BATTERY", "ERROR", "MBC5", "MBC5+RAM", "MBC5+RAM+BATTERY",
+            "MBC5+RUMBLE", "MBC5+RUMBLE+RAM", "MBC5+RUMBLE+RAM+BATTERY"};
+
+
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -169,15 +175,17 @@ namespace GameBoyMono
             }
             else
             {
-                string strDebugger = "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
+                string strDebugger =    "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
                                         "BC: 0x" + string.Format("{0:X}", gbCPU.reg_BC) + "\n" +
                                         "DE: 0x" + string.Format("{0:X}", gbCPU.reg_DE) + "\n" +
                                         "HL: 0x" + string.Format("{0:X}", gbCPU.reg_HL) + "\n" +
                                         "SP: 0x" + string.Format("{0:X}", gbCPU.reg_SP) + "\n" +
                                         "PC: 0x" + string.Format("{0:X}", gbCPU.reg_PC) + "\n\n" +
-                                        "LY: " + gbCPU.LY + "\n" +
-                                        "LYC: " + gbCPU.LYC + "\n" +
-                                        "Stat: " + string.Format("{0:X}", gbCPU.Stat) + "\n";
+
+                                        "cartridgeType: " + cartridgeTypeStrings[gbCPU.cartridge.cartridgeType] + "\n" +
+                                        "ROM Size: " + gbCPU.cartridge.romSize + "\n" +
+                                        "RAM Size: " + gbCPU.cartridge.ramSize + "\n" +
+                                        "destination code: " + gbCPU.cartridge.destinationCode + "\n";
                 // debugger
                 spriteBatch.DrawString(font0, strDebugger, new Vector2(0, 1024 - font0.MeasureString(strDebugger).Y), Color.White);
 
@@ -245,30 +253,14 @@ namespace GameBoyMono
         {
             gbCPU.cartridge.ROM = File.ReadAllBytes(path);
 
-            // 0143 - CGB Flag
-            // 80h - Game supports CGB functions, but works on old gameboys also.
-            // C0h - Game works on CGB only (physically the same as 80h).
-
-            // load the name
-            for (int i = 0x0134; i < 0x0144; i++)
-            {
-                if (gbCPU.generalMemory.memory[i] != 0)
-                    romName += (char)gbCPU.generalMemory.memory[i];
-                else
-                    break;
-            }
-
-            cartridgeType = gbCPU.generalMemory.memory[0x0147];
-            romSize = gbCPU.generalMemory.memory[0x0148];
-            ramSize = gbCPU.generalMemory.memory[0x0149];
-            destinationCode = gbCPU.generalMemory.memory[0x014A];
+            gbCPU.cartridge.Init();
         }
 
         void SaveState(string path)
         {
             using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write))
             {
-                using(BinaryWriter writer = new BinaryWriter(fileStream))
+                using (BinaryWriter writer = new BinaryWriter(fileStream))
                 {
                     writer.Write(gbCPU.reg_PC);
                     writer.Write(gbCPU.reg_SP);
@@ -277,7 +269,7 @@ namespace GameBoyMono
                     writer.Write(gbCPU.reg_BC);
                     writer.Write(gbCPU.reg_DE);
                     writer.Write(gbCPU.reg_HL);
-                    
+
                 }
             }
         }

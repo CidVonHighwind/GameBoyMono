@@ -31,8 +31,12 @@ namespace GameBoyMono
                     return Game1.gbCPU.cartridge[index];
                 }
 
+                // cartrige RAM
+                if (0xA000 <= index && index < 0xC000)
+                    return Game1.gbCPU.cartridge[index];
+
                 // shadow ram
-                if (0xE000 <= index && index <= 0xFDFF)
+                if (0xE000 <= index && index < 0xFE00)
                     return memory[index - 0x2000];
 
                 // update joypad input
@@ -82,7 +86,7 @@ namespace GameBoyMono
                 // External Expanision Working RAM
                 else if (index < 0xC000)
                 {
-                    //memory[index] = value;
+                    Game1.gbCPU.cartridge[index] = value;
                 }
                 // Unit Working RAM
                 else if (index < 0xE000)
@@ -107,8 +111,6 @@ namespace GameBoyMono
                 // I/O Ports
                 else if (index < 0xFF80)
                 {
-                    Game1.gbCPU.cycleCount = Game1.gbCPU.cycleCount;
-
                     // reset div
                     if (index == 0xFF04)
                     {
@@ -122,7 +124,6 @@ namespace GameBoyMono
                             memory[index] = memory[0xFF06];
 
                         memory[index] = (byte)(value & 0x07);
-                        return;
                     }
                     // FF41 bit 2: match
                     //  Executing a write instruction for the match flag resets that flag but does not change the mode flag.
@@ -166,15 +167,13 @@ namespace GameBoyMono
                     memory[index] = value;
                 }
                 // Interrupt Enable Register
-                else if (index <= 0xFFFF)
+                else if (index <= 0x10000)
                 {
                     memory[index] = value;
                 }
-                // Nothing
+                // ERROR
                 else
-                {
-
-                }
+                { }
             }
         }
     }

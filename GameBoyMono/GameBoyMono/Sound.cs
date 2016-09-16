@@ -11,10 +11,12 @@ namespace GameBoyMono
     {
         BufferedWaveProvider bufferProvider;
         WaveOut waveOut;
-        
+
+        const int outputRate = 44100;
+
+
+        public byte[] soundBuffer = new byte[1470];
         int currentByte;
-        
-        public byte[] _soundBuffer = new byte[1470];
 
         // FF10-FF26
         byte[] soundRegister = new byte[0x2F];
@@ -29,15 +31,17 @@ namespace GameBoyMono
         byte modeOneEnvelopeSweeps;
         bool modeOneEnvelopeInc;
         byte modeOneEnvelopeInitValue;
+
+        int modeOneEnvelopeWatch;
+        int modeOneEnvelopeCounter;
+        int modeOneEnvelopeState;
+
         // FF13-FF14
         short modeOneFrequency;
         // FF14
         bool modeOnecounterConsecutiveSelection;
         bool modeOneInit;
 
-        int modeOneEnvelopeWatch;
-        int modeOneEnvelopeCounter;
-        int modeOneEnvelopeState;
 
         int modeOneFreqWatch;
         short waveOne = 5000;
@@ -69,7 +73,7 @@ namespace GameBoyMono
         int modeTwoEnvelopeWatch;
         int modeTwoEnvelopeCounter;
         int modeTwoEnvelopeState;
-        
+
         bool modeTwoFreqDuty;
         int modeTwoFreqTime;
 
@@ -91,7 +95,7 @@ namespace GameBoyMono
 
         public Sound()
         {
-            bufferProvider = new BufferedWaveProvider(new WaveFormat(44100, 16, 1));
+            bufferProvider = new BufferedWaveProvider(new WaveFormat(outputRate, 16, 1));
 
             waveOut = new WaveOut();
 
@@ -117,7 +121,7 @@ namespace GameBoyMono
 
         public void AddCurrentBuffer()
         {
-            bufferProvider.AddSamples(_soundBuffer, 0, _soundBuffer.Length);
+            bufferProvider.AddSamples(soundBuffer, 0, soundBuffer.Length);
 
             currentByte = 0;
         }
@@ -149,13 +153,11 @@ namespace GameBoyMono
 
                 // Stuff
                 else if (index == 0xFF24)
-                {
                     return soundOutputLevel;
-                }
+                else if (index == 0xFF25)
+                    return soundOutput;
                 else if (index == 0xFF26)
-                {
                     return soundOnOff;
-                }
 
                 return soundRegister[index - 0xFF10];
             }
@@ -173,21 +175,14 @@ namespace GameBoyMono
                 else if (index == 0xFF11)
                 {
                     soundRegister[index - 0xFF10] = value;
-
-                    modeOneSoundLengh = (byte)(value & 0x07);
+                    
                     modeOneWavePatternDuty = (byte)(value >> 6);
 
-                    if (modeOneWavePatternDuty == 0)
-                        modeOneWavePatternDutyPercentage = 12.5f;
-                    else if (modeOneWavePatternDuty == 1)
-                        modeOneWavePatternDutyPercentage = 25;
-                    else if (modeOneWavePatternDuty == 2)
-                        modeOneWavePatternDutyPercentage = 50;
-                    else if (modeOneWavePatternDuty == 3)
-                        modeOneWavePatternDutyPercentage = 75;
+                    // 12.5, 25, 50, 75
+                    modeOneWavePatternDutyPercentage = 25 * modeOneWavePatternDuty + ((modeOneWavePatternDuty == 0) ? 12.5f : 0);
 
                     // Sound Length = (64-t1) * (1/256) sec
-                    modeOneSoundTime = (int)(((64 - modeOneSoundLengh) / 256d) * 44100);
+                    modeOneSoundTime = (int)(((64 - (byte)(value & 0x07)) / 256d) * outputRate);
                 }
                 else if (index == 0xFF12)
                 {
@@ -204,14 +199,14 @@ namespace GameBoyMono
                     soundRegister[index - 0xFF10] = value;
 
                     modeOneFrequency = (short)((modeOneFrequency & 0xF00) + value);
-                    modeOneFreqTime = (int)(44100 / (4194304 / (double)(32 * (2048 - modeOneFrequency))));
+                    modeOneFreqTime = (int)(outputRate / (4194304 / (double)(32 * (2048 - modeOneFrequency))));
                 }
                 else if (index == 0xFF14)
                 {
                     soundRegister[index - 0xFF10] = value;
 
                     modeOneFrequency = (short)((modeOneFrequency & 0xFF) + ((value & 0x07) << 8));
-                    modeOneFreqTime = (int)(44100 / (4194304 / (double)(32 * (2048 - modeOneFrequency))));
+                    modeOneFreqTime = (int)(outputRate / (4194304 / (double)(32 * (2048 - modeOneFrequency))));
 
                     modeOnecounterConsecutiveSelection = (value & 0x40) == 0x40;
 
@@ -236,17 +231,11 @@ namespace GameBoyMono
                     modeTwoSoundLengh = (byte)(value & 0x07);
                     modeTwoWavePatternDuty = (byte)(value >> 6);
 
-                    if (modeTwoWavePatternDuty == 0)
-                        modeTwoWavePatternDutyPercentage = 12.5f;
-                    else if (modeTwoWavePatternDuty == 1)
-                        modeTwoWavePatternDutyPercentage = 25;
-                    else if (modeTwoWavePatternDuty == 2)
-                        modeTwoWavePatternDutyPercentage = 50;
-                    else if (modeTwoWavePatternDuty == 3)
-                        modeTwoWavePatternDutyPercentage = 75;
-
+                    // 12.5, 25, 50, 75
+                    modeTwoWavePatternDutyPercentage = 25 * modeTwoWavePatternDuty + ((modeTwoWavePatternDuty == 0) ? 12.5f : 0);
+                    
                     // Sound Length = (64-t1) * (1/256) sec
-                    modeTwoSoundTime = (int)(((64 - modeTwoSoundLengh) / 256d) * 44100);
+                    modeTwoSoundTime = (int)(((64 - modeTwoSoundLengh) / 256d) * outputRate);
                 }
                 else if (index == 0xFF17)
                 {
@@ -263,14 +252,14 @@ namespace GameBoyMono
                     soundRegister[index - 0xFF10] = value;
 
                     modeTwoFrequency = (short)((modeTwoFrequency & 0xF00) + value);
-                    modeTwoFreqTime = (int)(44100 / (4194304 / (double)(32 * (2048 - modeTwoFrequency))));
+                    modeTwoFreqTime = (int)(outputRate / (4194304 / (double)(32 * (2048 - modeTwoFrequency))));
                 }
                 else if (index == 0xFF19)
                 {
                     soundRegister[index - 0xFF10] = value;
 
                     modeTwoFrequency = (short)((modeTwoFrequency & 0xFF) + ((value & 0x07) << 8));
-                    modeTwoFreqTime = (int)(44100 / (4194304 / (double)(32 * (2048 - modeTwoFrequency))));
+                    modeTwoFreqTime = (int)(outputRate / (4194304 / (double)(32 * (2048 - modeTwoFrequency))));
 
                     modeTwoCounterConsecutiveSelection = (value & 0x40) == 0x40;
 
@@ -288,21 +277,19 @@ namespace GameBoyMono
                 }
 
                 else if (index == 0xFF24)
-                {
                     soundOutputLevel = value;
-                }
+                else if (index == 0xFF25)
+                    soundOutput = value;
                 // NR52
                 else if (index == 0xFF26)
-                {
                     soundOnOff = value;
-                }
             }
         }
 
-        // gets called 44100 times a second
+        // gets called 44100 (outPutRate) times a second
         public void UpdateBuffer()
         {
-            if (currentByte >= 735)
+            if (currentByte >= soundBuffer.Length / 2)
                 return;
 
             // MODE ONE:
@@ -383,10 +370,10 @@ namespace GameBoyMono
             short soundTwo = (short)(waveTwo * (modeTwoEnvelopeState / 15d));
 
             // Sound 1 ON Flag  
-            if ((soundOnOff & 0x01) != 0x01 || InputHandler.KeyDown(Microsoft.Xna.Framework.Input.Keys.Q))
+            if ((soundOnOff & 0x01) != 0x01)
                 soundOne = 0;
             // Sound 2 ON Flag  
-            if ((soundOnOff & 0x02) != 0x02 || InputHandler.KeyDown(Microsoft.Xna.Framework.Input.Keys.W))
+            if ((soundOnOff & 0x02) != 0x02)
                 soundTwo = 0;
 
             short outPut = (short)(soundOne + soundTwo);
@@ -394,8 +381,8 @@ namespace GameBoyMono
             if ((soundOnOff & 0x80) != 0x80)
                 outPut = 0;
 
-            _soundBuffer[currentByte * 2] = (byte)(outPut & 0xFF);
-            _soundBuffer[currentByte * 2 + 1] = (byte)(outPut >> 8);
+            soundBuffer[currentByte * 2] = (byte)(outPut & 0xFF);
+            soundBuffer[currentByte * 2 + 1] = (byte)(outPut >> 8);
 
             currentByte++;
         }

@@ -13,19 +13,10 @@ namespace GameBoyMono
         public GeneralMemory generalMemory = new GeneralMemory();
         public Cartridge cartridge = new Cartridge();
 
-        /* 
-         * A-accumulator
-         * F-flags
-         * 
-         * 7 6 5 4 3 2 1 0
-         * Z N H C 0 0 0 0
-         * 
-         * Z-Zero Flag
-         * N-Subtract Flag
-         * H-Half Carry Flag
-         * C-Carry Flag
-         * 0-Not used, always zero
-         */
+        // Interrupt Master Enable Flag (write only)
+        public bool IME;
+        
+        // registers
         public byte reg_A, reg_F;
         public byte reg_B, reg_C;
         public byte reg_D, reg_E;
@@ -35,7 +26,8 @@ namespace GameBoyMono
         public ushort reg_BC { get { return (ushort)(reg_B << 8 | reg_C); } set { reg_B = (byte)(value >> 8); reg_C = (byte)(value & 0xFF); } }
         public ushort reg_DE { get { return (ushort)(reg_D << 8 | reg_E); } set { reg_D = (byte)(value >> 8); reg_E = (byte)(value & 0xFF); } }
         public ushort reg_HL { get { return (ushort)(reg_H << 8 | reg_L); } set { reg_H = (byte)(value >> 8); reg_L = (byte)(value & 0xFF); } }
-
+        
+        // flags (reg_F)
         public bool flag_Z { get { return (reg_F & 0x80) == 0x80; } set { reg_F = (byte)((reg_F & 0x70) | (value ? 0x80 : 0x00)); } }
         public bool flag_N { get { return (reg_F & 0x40) == 0x40; } set { reg_F = (byte)((reg_F & 0xB0) | (value ? 0x40 : 0x00)); } }
         public bool flag_H { get { return (reg_F & 0x20) == 0x20; } set { reg_F = (byte)((reg_F & 0xD0) | (value ? 0x20 : 0x00)); } }
@@ -52,10 +44,7 @@ namespace GameBoyMono
         public ushort data16 { get { return (ushort)((generalMemory[reg_PC - 1] << 8) | generalMemory[reg_PC - 2]); } }
 
         bool CPUHalt;
-
-        // Interrupt Master Enable Flag (write only)
-        public bool IME;
-
+        
         // list of functions
         public Action[] ops, op_cb;
 
@@ -67,69 +56,20 @@ namespace GameBoyMono
         // 44100/60=735 -> 70224/735=95,5..
         float soundCount, maxSoundCycles = 95.54f;
 
-        public bool romMounted, bugFound, renderScreen;
+        public bool romMounted, renderScreen;
 
         public bool soundPlaying;
 
         int divCounter, timerCounter;
+
+        int soundDelay = 0;
 
         public byte LY { get { return generalMemory[0xFF44]; } }
         public byte LYC { get { return generalMemory.memory[0xFF45]; } }
         public byte LCDMode { get { return (byte)(generalMemory.memory[0xFF41] & 0x03); } }
 
         public byte Stat { get { return generalMemory.memory[0xFF41]; } }
-
-        byte[] cycleArray = new byte[] {    04,12,08,08,04,04,08,04,20,08,08,08,04,04,08,04,
-                                            04,12,08,08,04,04,08,04,12,08,08,08,04,04,08,04,
-                                            08,12,08,08,04,04,08,04,08,08,08,08,04,04,08,04,
-                                            08,12,08,08,12,12,12,04,08,08,08,08,04,04,08,04,
-                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
-                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
-                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
-                                            08,08,08,08,08,08,04,08,04,04,04,04,04,04,08,04,
-                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
-                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
-                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
-                                            04,04,04,04,04,04,08,04,04,04,04,04,04,04,08,04,
-                                            08,12,12,16,12,16,08,16,08,16,12,00,12,24,08,16,
-                                            08,12,12,00,12,16,08,16,08,16,12,00,12,00,08,16,
-                                            12,12,08,00,00,16,08,16,16,04,16,00,00,00,08,16,
-                                            12,12,08,04,00,16,08,16,12,08,16,04,00,00,08,16};
-
-        byte[] cycleCBArray = new byte[] {  08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,12,08,08,08,08,08,08,08,12,08,
-                                            08,08,08,08,08,08,12,08,08,08,08,08,08,08,12,08,
-                                            08,08,08,08,08,08,12,08,08,08,08,08,08,08,12,08,
-                                            08,08,08,08,08,08,12,08,08,08,08,08,08,08,12,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08,
-                                            08,08,08,08,08,08,16,08,08,08,08,08,08,08,16,08 };
-
-        byte[] opLength = new byte[] {      01,03,01,01,01,01,02,01,03,01,01,01,01,01,02,01,
-                                            01,03,01,01,01,01,02,01,02,01,01,01,01,01,02,01,
-                                            02,03,01,01,01,01,02,01,02,01,01,01,01,01,02,01,
-                                            02,03,01,01,01,01,02,01,02,01,01,01,01,01,02,01,
-                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
-                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
-                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
-                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
-                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
-                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
-                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
-                                            01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,01,
-                                            01,01,03,03,03,01,02,01,01,01,03,01,03,03,02,01,
-                                            01,01,03,00,03,01,02,01,01,01,03,00,03,00,02,01,
-                                            02,01,01,00,00,01,02,01,02,01,03,00,00,00,02,01,
-                                            02,01,01,01,00,01,02,01,02,01,03,01,00,00,02,01 };
-
+        
         public GameBoyCPU()
         {
             ops = new Action[] {
@@ -174,17 +114,26 @@ namespace GameBoyMono
             reg_PC = 0x00;
 
             romMounted = true;
+
+            SkipBootROM();
         }
-
-        int soundDelay = 0;
-
+        
         public void Update(GameTime gametime)
         {
             while (cycleCount < maxCycles)
                 CPUCycle();
 
+            cycleCount -= maxCycles;
+
+            // render Screen
+            if (renderScreen)
+            {
+                renderScreen = false;
+                Game1.gbRenderer.Draw();
+            }
+
             Game1.gbSound.AddCurrentBuffer();
-            
+
             if (!soundPlaying)
             {
                 soundDelay++;
@@ -195,23 +144,17 @@ namespace GameBoyMono
                     Game1.gbSound.Play();
                 }
             }
-
-            cycleCount -= maxCycles;
         }
 
         public void CPUCycle()
         {
             lastCycleCount = cycleCount;
 
+            // execute next instruction
             if (!CPUHalt)
-            {
-                // execute next instruction
                 executeInstruction();
-            }
             else
-            {
                 cycleCount += 4;
-            }
 
             soundCount += (cycleCount - lastCycleCount);
 
@@ -288,11 +231,6 @@ namespace GameBoyMono
                 //lcdCycleCount = 0;
             }
 
-            if (renderScreen)
-            {
-                renderScreen = false;
-                Game1.gbRenderer.Draw();
-            }
 
             // set coincidence flag (0:LYC<>LY, 1:LYC=LY)
             if (generalMemory.memory[0xFF44] == generalMemory.memory[0xFF45])
@@ -302,11 +240,11 @@ namespace GameBoyMono
 
             byte STAT = generalMemory.memory[0xFF41];
 
-            if (((generalMemory.memory[0xFF41] & 0x40) == 0x40 && generalMemory.memory[0xFF44] == generalMemory.memory[0xFF45]) ||               // LY == LYC
-                ((generalMemory.memory[0xFF41] & 0x20) == 0x20 && (oldStat & 0x03) == 0 && (generalMemory.memory[0xFF41] & 0x03) == 1) ||  // OAM (start of mode 1 and 2)
+            if (((generalMemory.memory[0xFF41] & 0x40) == 0x40 && generalMemory.memory[0xFF44] == generalMemory.memory[0xFF45]) ||          // LY == LYC
+                ((generalMemory.memory[0xFF41] & 0x20) == 0x20 && (oldStat & 0x03) == 0 && (generalMemory.memory[0xFF41] & 0x03) == 1) ||   // OAM (start of mode 1 and 2)
                 ((generalMemory.memory[0xFF41] & 0x20) == 0x20 && (oldStat & 0x03) == 1 && (generalMemory.memory[0xFF41] & 0x03) == 2) ||
-                ((generalMemory.memory[0xFF41] & 0x10) == 0x10 && (oldStat & 0x03) == 0 && (generalMemory.memory[0xFF41] & 0x03) == 1) ||  // v-blank
-                ((generalMemory.memory[0xFF41] & 0x08) == 0x08 && (oldStat & 0x03) == 3 && (generalMemory.memory[0xFF41] & 0x03) == 0))    // h-blank (start of mode 0)
+                ((generalMemory.memory[0xFF41] & 0x10) == 0x10 && (oldStat & 0x03) == 0 && (generalMemory.memory[0xFF41] & 0x03) == 1) ||   // v-blank
+                ((generalMemory.memory[0xFF41] & 0x08) == 0x08 && (oldStat & 0x03) == 3 && (generalMemory.memory[0xFF41] & 0x03) == 0))     // h-blank (start of mode 0)
             {
                 // stat interrupt
                 generalMemory.memory[0xFF0F] |= 0x02;
@@ -395,8 +333,8 @@ namespace GameBoyMono
             currentInstruction = reg_PC;
 
             // update cycle count
-            cycleCount += cycleArray[generalMemory[reg_PC]];
-            reg_PC += opLength[generalMemory[reg_PC]];
+            cycleCount += OPCycle.cycleArray[generalMemory[reg_PC]];
+            reg_PC += OPLenght.opLength[generalMemory[reg_PC]];
 
             // execute
             if (ops[generalMemory[currentInstruction]] != null)
@@ -406,11 +344,14 @@ namespace GameBoyMono
             // cb instruction
             else if (generalMemory[currentInstruction] == 0xCB)
             {
-                cycleCount += cycleCBArray[generalMemory[reg_PC]];
+                cycleCount += OPCycle.cycleCBArray[generalMemory[reg_PC]];
                 op_cb[generalMemory[reg_PC]]();
                 reg_PC++;
             }
-            else { }
+            else
+            {
+                reg_PC++;
+            }
         }
 
         /*
@@ -468,6 +409,48 @@ namespace GameBoyMono
             generalMemory.memory[0xFF0F] &= 0xFB;
             // jump to address
             reg_PC = 0x50;
+        }
+
+        public void SkipBootROM()
+        {
+            reg_AF = 0x01B0;
+            reg_BC = 0x0013;
+            reg_DE = 0x00D8;
+            reg_HL = 0x014D;
+
+            reg_PC = 0x0100;
+            reg_SP = 0xFFFE;
+
+            generalMemory.memory[0xFF06] = 0x00;
+            generalMemory.memory[0xFF07] = 0x00;
+            generalMemory.memory[0xFF10] = 0x80;
+            generalMemory.memory[0xFF11] = 0xBF;
+            generalMemory.memory[0xFF12] = 0xF3;
+            generalMemory.memory[0xFF14] = 0xBF;
+            generalMemory.memory[0xFF16] = 0x3F;
+            generalMemory.memory[0xFF17] = 0x00;
+            generalMemory.memory[0xFF19] = 0xBF;
+            generalMemory.memory[0xFF1A] = 0x7F;
+            generalMemory.memory[0xFF1B] = 0xFF;
+            generalMemory.memory[0xFF1C] = 0x9F;
+            generalMemory.memory[0xFF1E] = 0xBF;
+            generalMemory.memory[0xFF20] = 0xFF;
+            generalMemory.memory[0xFF21] = 0x00;
+            generalMemory.memory[0xFF22] = 0x00;
+            generalMemory.memory[0xFF23] = 0xBF;
+            generalMemory.memory[0xFF24] = 0x77;
+            generalMemory.memory[0xFF25] = 0xF3;
+            generalMemory.memory[0xFF26] = 0xF1;
+            generalMemory.memory[0xFF40] = 0x91;
+            generalMemory.memory[0xFF42] = 0x00;
+            generalMemory.memory[0xFF43] = 0x00;
+            generalMemory.memory[0xFF45] = 0x00;
+            generalMemory.memory[0xFF47] = 0xFC;
+            generalMemory.memory[0xFF48] = 0xFF;
+            generalMemory.memory[0xFF49] = 0xFF;
+            generalMemory.memory[0xFF4A] = 0x00;
+            generalMemory.memory[0xFF4B] = 0x00;
+            generalMemory.memory[0xFFFF] = 0x00;
         }
     }
 }
