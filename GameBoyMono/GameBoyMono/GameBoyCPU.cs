@@ -64,11 +64,16 @@ namespace GameBoyMono
         int lcdCycleCount;
         int lcdCycleTime;
 
+        // 44100/60=735 -> 70224/735=95,5..
+        float soundCount, maxSoundCycles = 95.54f;
+
         public bool romMounted, bugFound, renderScreen;
+
+        public bool soundPlaying;
 
         int divCounter, timerCounter;
 
-        public byte LY { get { return generalMemory.memory[0xFF44]; } }
+        public byte LY { get { return generalMemory[0xFF44]; } }
         public byte LYC { get { return generalMemory.memory[0xFF45]; } }
         public byte LCDMode { get { return (byte)(generalMemory.memory[0xFF41] & 0x03); } }
 
@@ -171,14 +176,25 @@ namespace GameBoyMono
             romMounted = true;
         }
 
-        public int updateCount;
+        int soundDelay = 0;
 
         public void Update(GameTime gametime)
         {
             while (cycleCount < maxCycles)
                 CPUCycle();
 
-            updateCount++;
+            Game1.gbSound.AddCurrentBuffer();
+            
+            if (!soundPlaying)
+            {
+                soundDelay++;
+
+                if (soundDelay >= 1)
+                {
+                    soundPlaying = true;
+                    Game1.gbSound.Play();
+                }
+            }
 
             cycleCount -= maxCycles;
         }
@@ -195,6 +211,15 @@ namespace GameBoyMono
             else
             {
                 cycleCount += 4;
+            }
+
+            soundCount += (cycleCount - lastCycleCount);
+
+            if (soundCount > maxSoundCycles)
+            {
+                soundCount -= maxSoundCycles;
+
+                Game1.gbSound.UpdateBuffer();
             }
 
             int oldStat = generalMemory.memory[0xFF41];

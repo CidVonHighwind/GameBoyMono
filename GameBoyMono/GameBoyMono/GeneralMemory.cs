@@ -56,6 +56,12 @@ namespace GameBoyMono
                     }
                 }
 
+                // Sound stuff
+                else if (0xFF10 <= index && index <= 0xFF3F)
+                {
+                    return Game1.gbSound[index];
+                }
+
                 return memory[index];
             }
             set
@@ -120,19 +126,12 @@ namespace GameBoyMono
                     }
                     // FF41 bit 2: match
                     //  Executing a write instruction for the match flag resets that flag but does not change the mode flag.
-                    
-                    // Sound stuff
-                    else if (index == 0xFF10)
-                    { }
-                    else if (index == 0xFF11)
-                    { }
-                    else if (index == 0xFF12)
-                    { }
-                    else if (index == 0xFF13)
-                    { }
-                    else if (index == 0xFF14)
-                    { }
 
+                    // Sound stuff
+                    else if (0xFF10 <= index && index <= 0xFF3F)
+                    {
+                        Game1.gbSound[index] = value;
+                    }
                     // LCD
                     else if (index == 0xFF44)
                     {

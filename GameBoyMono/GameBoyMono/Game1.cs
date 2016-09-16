@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.IO;
+using System;
 
 namespace GameBoyMono
 {
@@ -16,6 +17,7 @@ namespace GameBoyMono
 
         public static GameBoyCPU gbCPU = new GameBoyCPU();
         public static ScreenRenderer gbRenderer = new ScreenRenderer();
+        public static Sound gbSound = new Sound();
 
         RenderTarget2D shaderRenderTarget;
         Rectangle renderRectangle;
@@ -26,7 +28,7 @@ namespace GameBoyMono
         float renderScale;
         byte cartridgeType, romSize, ramSize, destinationCode;
         bool debugMode = true;
-
+        
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -42,6 +44,13 @@ namespace GameBoyMono
             Components.Add(new InputHandler(this));
 
             base.Initialize();
+        }
+
+        protected override void OnExiting(object sender, EventArgs args)
+        {
+            gbSound.Exit();
+
+            base.OnExiting(sender, args);
         }
 
 
