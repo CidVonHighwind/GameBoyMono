@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.IO;
 using System;
+using System.Collections.Generic;
 
 namespace GameBoyMono
 {
@@ -27,6 +28,14 @@ namespace GameBoyMono
         float renderScale;
         bool debugMode = true;
 
+        public List<string> romList = new List<string>();
+
+        int windowSizeX, windowSizeY;
+
+        bool romLoaded;
+
+        int buttonHeight = 30;
+
         string[] cartridgeTypeStrings = new string[] {
             "ROM ONLY", "MBC1", "MBC1+RAM", "MBC1+RAM+BATTERY", "ERROR", "MBC2", "MBC2+B", "ERROR", "ROM+RAM", "ROM+RAM+BATTERY",
             "ERROR", "MMM01", "MMM01+RAM", "MMM01+RAM+BATTERY", "ERROR", "MBC3+TIMER+BATTERY", "MBC3", "MBC3+RAM",
@@ -43,8 +52,13 @@ namespace GameBoyMono
             graphics.ApplyChanges();
             Content.RootDirectory = "Content";
 
+            IsMouseVisible = true;
+
+            Window.AllowUserResizing = true;
+
             this.IsFixedTimeStep = false;
         }
+        
         protected override void Initialize()
         {
             Components.Add(new InputHandler(this));
@@ -71,17 +85,22 @@ namespace GameBoyMono
 
             sprWhite = new Texture2D(graphics.GraphicsDevice, 1, 1);
             sprWhite.SetData(new Color[] { Color.White });
-
-            UpdateScale();
-
+            
             gbRenderer.Load(Content);
 
-            LoadRom(parameter[0]);
-
+            LoadRomList(parameter[0]);
+            
             gbCPU.Start();
-        }
 
-        public void UpdateScale()
+            SearchTree tree = new SearchTree();
+            tree.AddItem(new byte[] { 0xFF, 0xFA, 0x0F, 0xFF }, 12);
+            tree.AddItem(new byte[] { 0xFF, 0xCA, 0x0F, 0xFF }, 154);
+            tree.AddItem(new byte[] { 0xFF, 0xCA, 0xFF, 0xFF }, 554);
+
+            int search = tree.Search(new byte[] { 0xFF, 0xCA, 0xFF, 0xFF });
+        }
+        
+        public void UpdateRenderTargets()
         {
             float widthScale = graphics.PreferredBackBufferWidth / 160f;
             float heightScale = graphics.PreferredBackBufferHeight / 144f;
@@ -96,43 +115,39 @@ namespace GameBoyMono
 
             shaderRenderTarget = new RenderTarget2D(graphics.GraphicsDevice, 160 * (int)renderScale, 144 * (int)renderScale);
         }
-
-
-        protected override void UnloadContent()
-        {
-            // TODO: Unload any non ContentManager content here
-        }
-
-
+        
         protected override void Update(GameTime gameTime)
         {
+            if(windowSizeX != Window.ClientBounds.Width || windowSizeY != Window.ClientBounds.Height)
+            {
+                windowSizeX = Window.ClientBounds.Width;
+                windowSizeY = Window.ClientBounds.Height;
+
+                graphics.PreferredBackBufferWidth = windowSizeX;
+                graphics.PreferredBackBufferHeight = windowSizeY;
+                graphics.ApplyChanges();
+
+                UpdateRenderTargets();
+            }
+
             gbRenderer.debugMode = debugMode;
 
-            // update the cpu
-            gbCPU.Update(gameTime);
+            if (!romLoaded)
+            {
+                if (InputHandler.MouseLeftPressed(new Rectangle(0, 0, 500, buttonHeight * romList.Count)))
+                    LoadRom(romList[InputHandler.MousePosition().Y / buttonHeight]);
+            }
+            else
+            {
+                // update the cpu
+                gbCPU.Update(gameTime);
 
-            //if (InputHandler.KeyPressed(Keys.Space) || (InputHandler.KeyDown(Keys.Space) && stepCount == 5))
-            //{
-            //    //gbCPU.CPUCycle();
+                if (debugMode)
+                    UpdateSprMemory();
 
-            //    UpdateSprMemory();
-
-            //    if (!InputHandler.KeyPressed(Keys.Space))
-            //        stepCount = 0;
-            //}
-            //if (InputHandler.KeyDown(Keys.Space))
-            //    stepCount++;
-            //else
-            //    stepCount = -20;
-
-            if (debugMode)
-                UpdateSprMemory();
-
-            if (InputHandler.KeyPressed(Keys.F1))
-                debugMode = !debugMode;
-
-            // update the renderer
-            gbRenderer.Update();
+                if (InputHandler.KeyPressed(Keys.F1))
+                    debugMode = !debugMode;
+            }
 
             base.Update(gameTime);
         }
@@ -142,31 +157,46 @@ namespace GameBoyMono
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            if (!debugMode)
-            {
-                gbShader.Parameters["spriteWidth"].SetValue(shaderRenderTarget.Width);
-                gbShader.Parameters["spriteHeight"].SetValue(shaderRenderTarget.Height);
-                gbShader.Parameters["scale"].SetValue((int)renderScale);
+            if (romLoaded)
+            {                
+                // update the renderer
+                gbRenderer.Update();
 
-                graphics.GraphicsDevice.SetRenderTarget(shaderRenderTarget);
-                graphics.GraphicsDevice.Clear(Color.White);
+                if (!debugMode)
+                {
+                    gbShader.Parameters["spriteWidth"].SetValue(shaderRenderTarget.Width);
+                    gbShader.Parameters["spriteHeight"].SetValue(shaderRenderTarget.Height);
+                    gbShader.Parameters["scale"].SetValue((int)renderScale);
 
-                if (InputHandler.KeyDown(Keys.Q))
-                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null);
+                    graphics.GraphicsDevice.SetRenderTarget(shaderRenderTarget);
+                    graphics.GraphicsDevice.Clear(Color.White);
+
+                    if (InputHandler.KeyDown(Keys.Q))
+                        spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null);
+                    else
+                        spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
+
+                    spriteBatch.Draw(gbRenderer.gbRenderTarget, new Rectangle(0, 0, shaderRenderTarget.Width, shaderRenderTarget.Height), Color.White);
+
+                    spriteBatch.End();
+                    graphics.GraphicsDevice.SetRenderTarget(null);
+                }
                 else
-                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
-
-                spriteBatch.Draw(gbRenderer.gbRenderTarget, new Rectangle(0, 0, shaderRenderTarget.Width, shaderRenderTarget.Height), Color.White);
-
-                spriteBatch.End();
-                graphics.GraphicsDevice.SetRenderTarget(null);
+                {
+                    gbRenderer.Draw();
+                }
             }
-            else
-            {
-                gbRenderer.Draw();
-            }
-
+            
             spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
+
+            if (!romLoaded)
+            {
+                if (InputHandler.MouseIntersect(new Rectangle(0, 0, 500, buttonHeight * romList.Count)))
+                    spriteBatch.Draw(sprWhite, new Rectangle(0, (InputHandler.MousePosition().Y / buttonHeight) * buttonHeight, 500, buttonHeight), Color.White);
+
+                for (int i = 0; i < romList.Count; i++)
+                    spriteBatch.DrawString(font0, Path.GetFileName(romList[i]), new Vector2(0, i * buttonHeight), Color.Black);
+            }
 
             if (!debugMode)
             {
@@ -175,7 +205,7 @@ namespace GameBoyMono
             }
             else
             {
-                string strDebugger =    "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
+                string strDebugger = "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
                                         "BC: 0x" + string.Format("{0:X}", gbCPU.reg_BC) + "\n" +
                                         "DE: 0x" + string.Format("{0:X}", gbCPU.reg_DE) + "\n" +
                                         "HL: 0x" + string.Format("{0:X}", gbCPU.reg_HL) + "\n" +
@@ -249,11 +279,28 @@ namespace GameBoyMono
             sprMemory.SetData(clMemory);
         }
 
+        public void LoadRomList(string path)
+        {
+            romList.Clear();
+            romList.AddRange(Directory.GetFiles(path));
+
+            for (int i = 0; i < romList.Count; i++)
+            {
+                if (!romList[i].Contains(".gb"))
+                {
+                    romList.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
         void LoadRom(string path)
         {
             gbCPU.cartridge.ROM = File.ReadAllBytes(path);
 
             gbCPU.cartridge.Init();
+
+            romLoaded = true;
         }
 
         void SaveState(string path)

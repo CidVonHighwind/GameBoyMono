@@ -1,11 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Text;
-using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace GameBoyMono
 {
@@ -26,9 +24,16 @@ namespace GameBoyMono
 
         public Point debugDrawPos = new Point(350, 0);
 
+        public Texture2D sprReplacementTiles;
+        Color[] sprReplacementTilesData;
+
+        SearchTree replaceTileTree = new SearchTree();
+
         public void Load(ContentManager Content)
         {
             LoadTexture(ref sprTileData);
+
+            LoadTileData();
 
             gbShader = Content.Load<Effect>("gbShader");
 
@@ -50,6 +55,14 @@ namespace GameBoyMono
             sprBackground = new Texture2D(Game1.graphics.GraphicsDevice, 160, 144);
             sprObjects = new Texture2D(Game1.graphics.GraphicsDevice, 160, 144);
 
+            sprReplacementTiles = Content.Load<Texture2D>("sprites/marioColor");
+            sprReplacementTilesData = new Color[sprReplacementTiles.Width * sprReplacementTiles.Height];
+            sprReplacementTiles.GetData(sprReplacementTilesData);
+
+            //sprTileData = Content.Load<Texture2D>("sprites/marioColor");
+            //tilesetData = new Color[sprTileData.Width * sprTileData.Height];
+            //sprTileData.GetData(tilesetData);
+
             gbRenderTarget = new RenderTarget2D(Game1.graphics.GraphicsDevice, 160, 144);
         }
 
@@ -60,6 +73,12 @@ namespace GameBoyMono
                 updateTileset = false;
                 LoadTexture(ref sprTileData);
             }
+            //if (InputHandler.KeyPressed(Microsoft.Xna.Framework.Input.Keys.T))
+            //{
+            //    LoadTexture(ref sprTileData);
+            //}
+            if (InputHandler.KeyPressed(Microsoft.Xna.Framework.Input.Keys.T))
+                SaveTileData();
         }
 
         /*
@@ -88,7 +107,7 @@ namespace GameBoyMono
                 Game1.graphics.GraphicsDevice.SetRenderTarget(gbRenderTarget);
 
             Game1.graphics.GraphicsDevice.Clear(Color.Pink);
-            Game1.spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null, gbShader);
+            Game1.spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null);//, gbShader);
 
             // draw the tiledata
             int scale = debugMode ? 2 : 1;
@@ -99,7 +118,7 @@ namespace GameBoyMono
             gbShader.Parameters["color3"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
             gbShader.Parameters["color4"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
             // draw window + background
-            Game1.spriteBatch.Draw(sprBackground, new Rectangle(0,0,sprBackground.Width * scale, sprBackground.Height * scale), Color.White);
+            Game1.spriteBatch.Draw(sprBackground, new Rectangle(0, 0, sprBackground.Width * scale, sprBackground.Height * scale), Color.White);
 
             gbShader.Parameters["color1"].SetValue(objColors[0]);
             gbShader.Parameters["color2"].SetValue(objColors[1]);
@@ -117,7 +136,8 @@ namespace GameBoyMono
                 gbShader.Parameters["color3"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
                 gbShader.Parameters["color4"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
 
-                Game1.spriteBatch.Draw(sprTileData, new Rectangle(0, 350, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
+                if (sprTileData != null)
+                    Game1.spriteBatch.Draw(sprTileData, new Rectangle(0, 350, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
 
                 // LCD Display Enable
                 if ((Game1.gbCPU.generalMemory.memory[0xFF40] & 0x80) == 0x00)
@@ -161,8 +181,9 @@ namespace GameBoyMono
                     if (posY + 8 < 0)
                         posY += 256;
 
-                    Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX * scale, debugDrawPos.Y + posY * scale, 8 * scale, 8 * scale),
-                        new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
+                    if (sprTileData != null)
+                        Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX * scale, debugDrawPos.Y + posY * scale, 8 * scale, 8 * scale),
+                            new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
                 }
 
                 // Window
@@ -183,7 +204,7 @@ namespace GameBoyMono
 
                         int posX = (i - startAddress) % 32 + WX;
                         int posY = (i - startAddress) / 32 + WY;
-                        Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX * 8 * scale, debugDrawPos.Y  + posY * 8 * scale - 7 * scale, 8 * scale, 8 * scale),
+                        Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX * 8 * scale, debugDrawPos.Y + posY * 8 * scale - 7 * scale, 8 * scale, 8 * scale),
                             new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
                     }
                 }
@@ -226,8 +247,9 @@ namespace GameBoyMono
                         tileNumber = (byte)(tileNumber & 0xFE);
 
                     // draw the tile
-                    Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX, debugDrawPos.Y + posY, 8 * scale, 8 * scale), new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8),
-                        Color.White, 0, Vector2.Zero, sprEffect, 0);
+                    if (sprTileData != null)
+                        Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX, debugDrawPos.Y + posY, 8 * scale, 8 * scale),
+                            new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8), Color.White, 0, Vector2.Zero, sprEffect, 0);
 
                     // draw the second part of the sprite if in 8x16 mode
                     if (LCDC_Bit2)
@@ -303,6 +325,9 @@ namespace GameBoyMono
                     }
                 }
 
+                if (colorData1[scanLine * 160 + i] == Color.Transparent)
+                    colorData1[scanLine * 160 + i] = Color.White;
+
                 // draw the objects
                 if (drawOBJ)
                 {
@@ -349,14 +374,20 @@ namespace GameBoyMono
                             spriteY = 7 - spriteY;
 
                         byte b = tilesetByteData[(tileNumber % 16) * 8 + (tileNumber / 16) * (16 * 8 * 8) + spriteX + spriteY * (16 * 8)];
-                        
+
                         int colorNumber = (Game1.gbCPU.generalMemory[0xFF48 + palette] >> ((b * 2))) & 0x03;
 
                         float shade = (3 - colorNumber) / 3f;
                         Color color = new Color(shade, shade, shade, 1);
 
-                        if (b > 0)
-                            colorData2[scanLine * 160 + i] = color;
+                        // if sprite is not white (transparent)
+                        //if (b > 0)
+                        //    colorData2[scanLine * 160 + i] = color;
+
+                        Color pixel = tilesetData[(tileNumber % 16) * 8 + (tileNumber / 16) * (16 * 8 * 8) + spriteY * (16 * 8) + spriteX];
+
+                        if (pixel != Color.Transparent)
+                            colorData2[scanLine * 160 + i] = pixel;
                     }
                 }
             }
@@ -376,7 +407,7 @@ namespace GameBoyMono
             // bank 0 countains 192 tiles and two background maps
             // bank 1 contains another 192 tiles
 
-            // tile data:   8000-8FFF   (Background/Window
+            // tile data:   8000-8FFF   Background/Window
             //              8800-97FF
             // they overlap
             int tilesX = 16;
@@ -388,20 +419,33 @@ namespace GameBoyMono
             tilesetData = new Color[sprTexture.Width * sprTexture.Height];
             tilesetByteData = new byte[sprTexture.Width * sprTexture.Height];
 
-            // tile
+            int[] tileData = new int[8 * 8];
+
+            // tiles
             for (int iy = 0; iy < tilesY; iy++)
                 for (int ix = 0; ix < tilesX; ix++)
+                {
+                    int currentTile = ix + iy * tilesX;
+
+                    byte[] byteData = new byte[16];
+
+                    // singel tile
                     for (int y = 0; y < 8; y++)
+                    {
+                        byte byteOne = Game1.gbCPU.generalMemory.memory[0x8000 + (currentTile * 16) + (y * 2)];
+                        byte byteTwo = Game1.gbCPU.generalMemory.memory[0x8000 + (currentTile * 16) + (y * 2) + 1];
+
+                        byteData[y * 2 + 0] = byteOne;
+                        byteData[y * 2 + 1] = byteTwo;
+
                         for (int x = 0; x < 8; x++)
                         {
-                            int i = ix + iy * tilesX;
-                            int startAddress = 0x8000;
-
                             // get the color data
-                            int data = ((Game1.gbCPU.generalMemory.memory[startAddress + (i * 16) + (y * 2)] >> (7 - x)) & 0x01) |
-                                (((Game1.gbCPU.generalMemory.memory[startAddress + (i * 16) + (y * 2) + 1] << 1) >> (7 - x)) & 0x02);
+                            byte data = (byte)(((byteOne >> (7 - x)) & 0x01) | ((((byteTwo << 1) >> (7 - x)) & 0x02)));
 
-                            tilesetByteData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] = (byte)data;
+                            tilesetByteData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] = data;
+
+                            tileData[x + y * 8] = data;
 
                             // convert the number to a color
                             float color = (3 - data) / 3f;
@@ -410,8 +454,62 @@ namespace GameBoyMono
 
                             tilesetData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] = cl;
                         }
+                    }
+
+                    // search for a replacement
+                    int tileNumber = replaceTileTree.Search(byteData);
+
+                    if (tileNumber >= 0)
+                    {
+                        // load the replacement textures
+                        int tilePosX = tileNumber % tilesX;
+                        int tilePosY = tileNumber / tilesX;
+
+                        for (int y = 0; y < 8; y++)
+                            for (int x = 0; x < 8; x++)
+                            {
+                                tilesetData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] =
+                                    sprReplacementTilesData[((y + (tilePosY * 8)) * sprTexture.Width) + (tilePosX * 8) + x];
+                            }
+                    }
+                }
 
             sprTexture.SetData(tilesetData);
+        }
+
+        void SaveTileData()
+        {
+            using (BinaryWriter writer = new BinaryWriter(File.Open("tileData", FileMode.Create)))
+            {
+                for (int i = 0; i < 0x9800 - 0x8000; i++)
+                {
+                    writer.Write(Game1.gbCPU.generalMemory.memory[0x8000 + i]);
+                }
+            }
+
+            using (Stream writer = File.Create("textureDump.png"))
+            {
+                sprTileData.SaveAsPng(writer, sprTileData.Width, sprTileData.Height);
+            }
+        }
+
+        void LoadTileData()
+        {
+            string strPath = "Content/sprites/tileData";
+            if (File.Exists(strPath))
+                using (BinaryReader writer = new BinaryReader(File.Open(strPath, FileMode.Open)))
+                {
+                    byte[] tile = new byte[16];
+                    // load all tiles
+                    for (int j = 0; j < 384; j++)
+                    {
+                        // read one tile
+                        for (int i = 0; i < 16; i++)
+                            tile[i] = writer.ReadByte();
+
+                        replaceTileTree.AddItem(tile, j);
+                    }
+                }
         }
     }
 }

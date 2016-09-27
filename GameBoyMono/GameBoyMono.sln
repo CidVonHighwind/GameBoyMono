@@ -5,6 +5,8 @@ VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameBoyMono", "GameBoyMono\GameBoyMono.csproj", "{CE1D7A69-ABFB-4652-BB7B-CDF8E261870C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameBoyMonoSpriteEditor", "GameBoyMonoSpriteEditor\GameBoyMonoSpriteEditor.csproj", "{75C86422-8BE9-46C3-A0E4-BDF0F70EDE90}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -15,6 +17,10 @@ Global
 		{CE1D7A69-ABFB-4652-BB7B-CDF8E261870C}.Debug|x86.Build.0 = Debug|x86
 		{CE1D7A69-ABFB-4652-BB7B-CDF8E261870C}.Release|x86.ActiveCfg = Release|x86
 		{CE1D7A69-ABFB-4652-BB7B-CDF8E261870C}.Release|x86.Build.0 = Release|x86
+		{75C86422-8BE9-46C3-A0E4-BDF0F70EDE90}.Debug|x86.ActiveCfg = Debug|x86
+		{75C86422-8BE9-46C3-A0E4-BDF0F70EDE90}.Debug|x86.Build.0 = Debug|x86
+		{75C86422-8BE9-46C3-A0E4-BDF0F70EDE90}.Release|x86.ActiveCfg = Release|x86
+		{75C86422-8BE9-46C3-A0E4-BDF0F70EDE90}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

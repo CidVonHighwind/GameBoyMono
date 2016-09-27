@@ -1,9 +1,6 @@
-﻿using NAudio.Wave;
+﻿using Microsoft.Xna.Framework;
+using NAudio.Wave;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GameBoyMono
 {
@@ -25,6 +22,11 @@ namespace GameBoyMono
         byte frameSequencerCounter;
 
         // MODE ONE
+        byte modeOneNumberofSweepShifts;
+        bool modeOneSweepSubtraction;
+        byte modeOneSweepTime;
+        byte modeOneSweepCounter;
+
         float modeOneWavePatternDutyPercentage;
 
         byte modeOneEnvelopeSteps;
@@ -182,6 +184,12 @@ namespace GameBoyMono
                 if (index == 0xFF10)
                 {
                     soundRegister[index - 0xFF10] = (byte)(value & 0x7F);
+
+                    modeOneNumberofSweepShifts = (byte)(value & 0x07);
+                    modeOneSweepSubtraction = (value & 0x08) == 0x08;
+                    modeOneSweepTime = (byte)((value & 0x70) >> 4);
+
+                    modeOneSweepCounter = 0;
                 }
                 else if (index == 0xFF11)
                 {
@@ -222,6 +230,8 @@ namespace GameBoyMono
                         modeOneInit = true;
 
                         soundOnOff |= 0x01;
+
+                        modeOneLenghtCounter = 0;
 
                         // set to initial value
                         modeOneEnvelopeState = (byte)(this[0xFF12] >> 4);
@@ -271,6 +281,8 @@ namespace GameBoyMono
 
                         soundOnOff |= 0x02;
 
+                        modeTwoLenghtCounter = 0;
+
                         // set to initial value
                         modeTwoEnvelopeState = (byte)(this[0xFF17] >> 4);
                     }
@@ -315,10 +327,13 @@ namespace GameBoyMono
                     {
                         soundOnOff |= 0x04;
 
+                        modeThreeLenghtCounter = 0;
+
                         modeThreeWatch = 0;
                     }
                     else
                     {
+                        soundOnOff = (byte)(soundOnOff & 0xFB);
                     }
                 }
 
@@ -401,6 +416,39 @@ namespace GameBoyMono
                     }
                 }
 
+                // 128Hz Sweep Clock
+                if((frameSequencerCounter + 2) % 4 == 0)
+                {
+                    modeOneSweepCounter++;
+
+                    // sweep
+                    if(modeOneSweepTime != 0 && modeOneNumberofSweepShifts != 0 && modeOneSweepCounter >= modeOneSweepTime)
+                    {
+                        modeOneSweepCounter = 0;
+                        short newFreq = (short)(modeOneFrequency + (modeOneSweepSubtraction ? -1 : 1) * (modeOneFrequency >> modeOneNumberofSweepShifts));
+
+                        // newFreq > 11bits
+                        if ((newFreq & 0x7FF) != newFreq)
+                        {
+                            // deactivate channel
+                            soundOnOff &= 0xFE;
+                        }
+                        else if(newFreq <= 0)
+                        {
+
+                        }
+                        else
+                        {
+                            modeOneFrequency = newFreq;
+                        }
+
+                        soundRegister[0xFF13 - 0xFF10] = (byte)(modeOneFrequency & 0xFF);
+                        soundRegister[0xFF14 - 0xFF10] = (byte)(soundRegister[0xFF14 - 0xFF10] & 0xF8 + (modeOneFrequency >> 8));
+
+                        modeOneFreqTime = (int)(outputRate / (4194304 / (double)(32 * (2048 - modeOneFrequency))));
+                    }
+                }
+
                 frameSequencerCounter++;
                 if (frameSequencerCounter > 7)
                     frameSequencerCounter = 0;
@@ -440,7 +488,8 @@ namespace GameBoyMono
             if (modeThreeInit)
             {
                 byte currentNibble = (byte)((modeThreeWatch / (double)modeThreeFreqTime) * 32);
-                waveThree = (short)(modeThreeMaxVolume * (waveNibbles[currentNibble] / 15d));
+                byte wave = (byte)(waveNibbles[currentNibble] >> (modeThreeOutputLevel - 1));
+                waveThree = (short)(modeThreeMaxVolume * (wave / 15d));
 
                 modeThreeWatch++;
 
@@ -458,16 +507,16 @@ namespace GameBoyMono
             short soundThree = waveThree;
 
             // Sound 1 ON Flag  
-            if ((soundOnOff & 0x01) != 0x01)
+            if ((soundOnOff & 0x01) == 0x00)
                 soundOne = 0;
             // Sound 2 ON Flag  
-            if ((soundOnOff & 0x02) != 0x02)
+            if ((soundOnOff & 0x02) == 0x00)
                 soundTwo = 0;
             // Sound 3 ON Flag  
-            if ((soundOnOff & 0x04) != 0x04 || modeThreeOutputLevel == 0x00 || !modeThreeOn)
+            if ((soundOnOff & 0x04) == 0x00 || modeThreeOutputLevel == 0x00 || !modeThreeOn)
                 soundThree = 0;
 
-            short outPut = (short)(soundOne + soundTwo + soundThree);
+            short outPut = (short)((soundOne + soundTwo + soundThree) * 0.05f);
 
             if ((soundOnOff & 0x80) != 0x80)
                 outPut = 0;

@@ -260,7 +260,7 @@ namespace GameBoyMono
 
             //if the game was not active the last mousestate is unintersting
             //lastMouseState = Game1.wasActive ? mouseState : Mouse.GetState();
-            lastMouseState = Mouse.GetState();
+            lastMouseState = mouseState;
             mouseState = Mouse.GetState();
 
             lastGamePadState = gamePadState;
