@@ -11,8 +11,8 @@
         public void DI() { IME = false; }
         public void EI() { IME = true; }
 
-        // LD/LDH
         public void LDH_a8_A() { generalMemory[0xFF00 + data8] = reg_A; }
+        // LD/LDH
         public void LDH_A_a8() { reg_A = generalMemory[0xFF00 + data8]; }
 
         public void LD_A_a16() { reg_A = generalMemory[data16]; }

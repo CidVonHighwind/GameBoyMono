@@ -121,11 +121,11 @@ namespace GameBoyMono
             cycleCount -= maxCycles;
 
             // render Screen
-            if (renderScreen)
-            {
-                renderScreen = false;
-                Game1.gbRenderer.Draw();
-            }
+            //if (renderScreen)
+            //{
+            //    renderScreen = false;
+            //    Game1.gbRenderer.Draw();
+            //}
 
             Game1.gbSound.AddCurrentBuffer();
 
@@ -185,6 +185,7 @@ namespace GameBoyMono
                     else if (generalMemory[0xFF44] == 0x99)
                         lcdCycleTime = 856;
 
+                    // render scanline
                     if (generalMemory.memory[0xFF44] < 144)
                         Game1.gbRenderer.RenderLine(generalMemory.memory[0xFF44]);
 

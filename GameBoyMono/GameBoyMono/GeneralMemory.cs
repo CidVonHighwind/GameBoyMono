@@ -154,6 +154,17 @@ namespace GameBoyMono
                     else
                     {
                         memory[index] = value;
+
+                        if (index == 0xFF40)
+                        {
+                            if ((value & 0x02) == 0x02)
+                            {
+
+                            }
+                            else
+                            {
+                            }
+                        }
                     }
                 }
                 // High RAM (HRAM)
@@ -162,7 +173,7 @@ namespace GameBoyMono
                     memory[index] = value;
                 }
                 // Interrupt Enable Register
-                else if (index <= 0x10000)
+                else if (index == 0xFFFF)
                 {
                     memory[index] = value;
                 }

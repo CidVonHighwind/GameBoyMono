@@ -9,32 +9,16 @@ namespace GameBoyMono
     class SearchTree
     {
         List<Node> top = new List<Node>();
+        Node head = new Node(-1);
 
-        public void AddItem(byte[] tileData, int number)
+        public bool AddItem(byte[] tileData, int number)
         {
-            for (int i = 0; i < top.Count; i++)
-            {
-                if (top[i].data == tileData[0])
-                {
-                    top[i].AddItem(tileData, 1, number);
-                    return;
-                }
-            }
-
-            Node newNode = new Node(tileData[0]);
-            top.Add(newNode);
-            top[top.Count - 1].AddItem(tileData, 1, number);
+            return head.AddItem(tileData, 0, number);
         }
 
         public int Search(byte[] tileData)
         {
-            for (int i = 0; i < top.Count; i++)
-            {
-                if (top[i].data == tileData[0])
-                    return top[i].searchTree(tileData, 1);
-            }
-
-            return -1;
+            return head.searchTree(tileData, 0);
         }
     }
 
@@ -48,29 +32,25 @@ namespace GameBoyMono
             data = _data;
         }
 
-        public void AddItem(byte[] tileData, int currentState, int _data)
+        public bool AddItem(byte[] tileData, int currentState, int _data)
         {
             if (tileData.Length == currentState)
             {
                 Node newNode = new Node(_data);
                 nodes.Add(newNode);
+                return true;
             }
             else
             {
+                // node already exists?
                 for (int i = 0; i < nodes.Count; i++)
-                {
-                    // node already exists
                     if (nodes[i].data == tileData[currentState])
-                    {
-                        nodes[i].AddItem(tileData, currentState + 1, _data);
-                        return;
-                    }
-                }
-
+                        return nodes[i].AddItem(tileData, currentState + 1, _data);
+                
                 // add the node if it does not exist
                 Node newNode = new Node(tileData[currentState]);
                 nodes.Add(newNode);
-                nodes[nodes.Count - 1].AddItem(tileData, currentState + 1, _data);
+                return nodes[nodes.Count - 1].AddItem(tileData, currentState + 1, _data);
             }
         }
 
@@ -78,18 +58,17 @@ namespace GameBoyMono
         {
             if (tileData.Length == state)
             {
+                // return the value found
                 if (nodes[0].nodes.Count == 0)
                     return nodes[0].data;
             }
             else
             {
+                // search for the next value
                 for (int i = 0; i < nodes.Count; i++)
-                {
                     if (nodes[i].data == tileData[state])
-                    {
                         return nodes[i].searchTree(tileData, state + 1);
-                    }
-                }
+                    
             }
 
             return -1;

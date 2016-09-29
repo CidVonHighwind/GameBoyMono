@@ -9,19 +9,24 @@ namespace GameBoyMono
 {
     public class Game1 : Game
     {
+        Color backgroundColor = new Color(74, 65, 42);
+
         public static GraphicsDeviceManager graphics;
         public static SpriteBatch spriteBatch;
 
         public static Texture2D sprWhite, sprMemory;
         SpriteFont font0;
-        Effect gbShader;
+        Effect gbShader, gbColorShader;
 
         public static GameBoyCPU gbCPU = new GameBoyCPU();
         public static ScreenRenderer gbRenderer = new ScreenRenderer();
         public static Sound gbSound = new Sound();
 
-        RenderTarget2D shaderRenderTarget;
+        RenderTarget2D shaderRenderTarget, gbRenderTarget;
         Rectangle renderRectangle;
+
+        Texture2D sprOverlay;
+        Rectangle overlayWindow = new Rectangle(640, 252, 640, 572);
 
         public static string[] parameter;
 
@@ -36,19 +41,19 @@ namespace GameBoyMono
 
         int buttonHeight = 30;
 
+        Vector4[] bgColors = new Vector4[4], objColors = new Vector4[4];
+        
         string[] cartridgeTypeStrings = new string[] {
             "ROM ONLY", "MBC1", "MBC1+RAM", "MBC1+RAM+BATTERY", "ERROR", "MBC2", "MBC2+B", "ERROR", "ROM+RAM", "ROM+RAM+BATTERY",
             "ERROR", "MMM01", "MMM01+RAM", "MMM01+RAM+BATTERY", "ERROR", "MBC3+TIMER+BATTERY", "MBC3", "MBC3+RAM",
             "MBC3+RAM+BATTERY", "MBC3+RAM+BATTERY", "ERROR", "MBC4", "MBC4+RAM", "MBC4+RAM+BATTERY", "ERROR", "MBC5", "MBC5+RAM", "MBC5+RAM+BATTERY",
             "MBC5+RUMBLE", "MBC5+RUMBLE+RAM", "MBC5+RUMBLE+RAM+BATTERY"};
 
-
-
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
-            graphics.PreferredBackBufferWidth = 1600;
-            graphics.PreferredBackBufferHeight = 1008;// 1024;
+            graphics.PreferredBackBufferWidth = 160 * 2 + 256 * 4 + 20;
+            graphics.PreferredBackBufferHeight = 870;
             graphics.ApplyChanges();
             Content.RootDirectory = "Content";
 
@@ -58,7 +63,7 @@ namespace GameBoyMono
 
             this.IsFixedTimeStep = false;
         }
-        
+
         protected override void Initialize()
         {
             Components.Add(new InputHandler(this));
@@ -79,27 +84,42 @@ namespace GameBoyMono
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             font0 = Content.Load<SpriteFont>("font0");
+            gbColorShader = Content.Load<Effect>("gbShader");
             gbShader = Content.Load<Effect>("gbShader1");
+
+            sprOverlay = Content.Load<Texture2D>("gbc");
 
             sprMemory = new Texture2D(graphics.GraphicsDevice, 512, 1024);
 
             sprWhite = new Texture2D(graphics.GraphicsDevice, 1, 1);
             sprWhite.SetData(new Color[] { Color.White });
-            
+
+            gbRenderTarget = new RenderTarget2D(graphics.GraphicsDevice, 160, 144);
+
             gbRenderer.Load(Content);
 
             LoadRomList(parameter[0]);
             
-            gbCPU.Start();
+            bgColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            bgColors[1] = new Vector4(0.0f, 0.6f, 0.6f, 1.0f);
+            bgColors[2] = new Vector4(0.0f, 0.3f, 0.3f, 1.0f);
+            bgColors[3] = new Vector4(0.0f, 0.03f, 0.03f, 1.0f);
+
+            objColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+            objColors[1] = new Vector4(0.8f, 0.5f, 0.5f, 1.0f);
+            objColors[2] = new Vector4(0.5f, 0.2f, 0.2f, 1.0f);
+            objColors[3] = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
 
             SearchTree tree = new SearchTree();
             tree.AddItem(new byte[] { 0xFF, 0xFA, 0x0F, 0xFF }, 12);
             tree.AddItem(new byte[] { 0xFF, 0xCA, 0x0F, 0xFF }, 154);
             tree.AddItem(new byte[] { 0xFF, 0xCA, 0xFF, 0xFF }, 554);
 
-            int search = tree.Search(new byte[] { 0xFF, 0xCA, 0xFF, 0xFF });
+            int search = tree.Search(new byte[] { 0xFF, 0xFA, 0x0F, 0xFF });
+
+            gbCPU.Start();
         }
-        
+
         public void UpdateRenderTargets()
         {
             float widthScale = graphics.PreferredBackBufferWidth / 160f;
@@ -107,18 +127,18 @@ namespace GameBoyMono
 
             renderScale = MathHelper.Min(widthScale, heightScale);
 
-            int width = (int)(renderScale * 160);
-            int height = (int)(renderScale * 144);
+            int width = (int)renderScale * 160;
+            int height = (int)renderScale * 144;
 
             renderRectangle = new Rectangle(graphics.PreferredBackBufferWidth / 2 - width / 2,
                 graphics.PreferredBackBufferHeight / 2 - height / 2, width, height);
 
             shaderRenderTarget = new RenderTarget2D(graphics.GraphicsDevice, 160 * (int)renderScale, 144 * (int)renderScale);
         }
-        
+
         protected override void Update(GameTime gameTime)
         {
-            if(windowSizeX != Window.ClientBounds.Width || windowSizeY != Window.ClientBounds.Height)
+            if (windowSizeX != Window.ClientBounds.Width || windowSizeY != Window.ClientBounds.Height)
             {
                 windowSizeX = Window.ClientBounds.Width;
                 windowSizeY = Window.ClientBounds.Height;
@@ -155,15 +175,45 @@ namespace GameBoyMono
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(backgroundColor);
+
+            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
 
             if (romLoaded)
-            {                
+            {
                 // update the renderer
                 gbRenderer.Update();
 
-                if (!debugMode)
+                if (debugMode)
                 {
+                    gbRenderer.Draw(spriteBatch);
+                }
+                else
+                {
+                    spriteBatch.End();
+                    graphics.GraphicsDevice.SetRenderTarget(gbRenderTarget);
+
+                    spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null, gbColorShader);
+
+                    // draw window + background
+                    gbColorShader.Parameters["color1"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);
+                    gbColorShader.Parameters["color2"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03]);
+                    gbColorShader.Parameters["color3"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
+                    gbColorShader.Parameters["color4"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
+
+                    spriteBatch.Draw(gbRenderer.sprBackground, Vector2.Zero, Color.White);
+
+                    // draw objects
+                    gbColorShader.Parameters["color1"].SetValue(objColors[0]);
+                    gbColorShader.Parameters["color2"].SetValue(objColors[1]);
+                    gbColorShader.Parameters["color3"].SetValue(objColors[2]);
+                    gbColorShader.Parameters["color4"].SetValue(objColors[3]);
+
+                    spriteBatch.Draw(gbRenderer.sprObjects, Vector2.Zero, Color.White);
+
+                    spriteBatch.End();
+
+
                     gbShader.Parameters["spriteWidth"].SetValue(shaderRenderTarget.Width);
                     gbShader.Parameters["spriteHeight"].SetValue(shaderRenderTarget.Height);
                     gbShader.Parameters["scale"].SetValue((int)renderScale);
@@ -176,18 +226,14 @@ namespace GameBoyMono
                     else
                         spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
 
-                    spriteBatch.Draw(gbRenderer.gbRenderTarget, new Rectangle(0, 0, shaderRenderTarget.Width, shaderRenderTarget.Height), Color.White);
+                    spriteBatch.Draw(gbRenderTarget, new Rectangle(0, 0, shaderRenderTarget.Width, shaderRenderTarget.Height), Color.White);
 
                     spriteBatch.End();
                     graphics.GraphicsDevice.SetRenderTarget(null);
-                }
-                else
-                {
-                    gbRenderer.Draw();
+                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
                 }
             }
-            
-            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
+
 
             if (!romLoaded)
             {
@@ -202,6 +248,12 @@ namespace GameBoyMono
             {
                 // draw the scaled up output
                 spriteBatch.Draw(shaderRenderTarget, renderRectangle, Color.White);
+
+                float scaleX = renderRectangle.Width / (float)overlayWindow.Width;
+                float scaleY = renderRectangle.Height / (float)overlayWindow.Height;
+
+                spriteBatch.Draw(sprOverlay, new Rectangle(-(int)(overlayWindow.X * scaleX) + renderRectangle.X,
+                    -(int)(overlayWindow.Y * scaleY) + renderRectangle.Y, (int)(sprOverlay.Width * scaleX), (int)(sprOverlay.Height * scaleY)), Color.White);
             }
             else
             {
@@ -215,9 +267,9 @@ namespace GameBoyMono
                                         "cartridgeType: " + cartridgeTypeStrings[gbCPU.cartridge.cartridgeType] + "\n" +
                                         "ROM Size: " + gbCPU.cartridge.romSize + "\n" +
                                         "RAM Size: " + gbCPU.cartridge.ramSize + "\n" +
-                                        "destination code: " + gbCPU.cartridge.destinationCode + "\n";
+                                        "destination code: " + gbCPU.cartridge.destinationCode;
                 // debugger
-                spriteBatch.DrawString(font0, strDebugger, new Vector2(0, 1024 - font0.MeasureString(strDebugger).Y), Color.White);
+                spriteBatch.DrawString(font0, strDebugger, new Vector2(5, graphics.PreferredBackBufferHeight - font0.MeasureString(strDebugger).Y - 5), Color.White);
 
                 //spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
             }

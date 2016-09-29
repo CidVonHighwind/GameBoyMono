@@ -10,60 +10,42 @@ namespace GameBoyMono
     public class ScreenRenderer
     {
         public Texture2D sprTileData, sprBackground, sprObjects;
-        public RenderTarget2D gbRenderTarget;
-
-        Effect gbShader;
-
-        Vector4[] bgColors = new Vector4[4];
-        Vector4[] objColors = new Vector4[4];
 
         public Color[] colorData1 = new Color[160 * 144];
         public Color[] colorData2 = new Color[160 * 144];
 
         public bool debugMode = false, updateTileset;
 
-        public Point debugDrawPos = new Point(350, 0);
+        public Point debugFramePos, debugTilePos, debugBackgroundPos, debugWindowPos, debugObjectPos;
 
         public Texture2D sprReplacementTiles;
         Color[] sprReplacementTilesData;
 
         SearchTree replaceTileTree = new SearchTree();
 
+        public byte bgp, obj0, obj1;
+
+        // draw the tiledata
+        int scale = 2;
+
         public void Load(ContentManager Content)
         {
             LoadTexture(ref sprTileData);
 
-            LoadTileData();
-
-            gbShader = Content.Load<Effect>("gbShader");
-
-            bgColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-            bgColors[1] = new Vector4(0.0f, 0.6f, 0.6f, 1.0f);
-            bgColors[2] = new Vector4(0.0f, 0.3f, 0.3f, 1.0f);
-            bgColors[3] = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-
-            objColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-            objColors[1] = new Vector4(0.8f, 0.5f, 0.5f, 1.0f);
-            objColors[2] = new Vector4(0.5f, 0.2f, 0.2f, 1.0f);
-            objColors[3] = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
-
-            gbShader.Parameters["color1"].SetValue(bgColors[0]);
-            gbShader.Parameters["color2"].SetValue(bgColors[1]);
-            gbShader.Parameters["color3"].SetValue(bgColors[2]);
-            gbShader.Parameters["color4"].SetValue(bgColors[3]);
+            LoadTileData("Content/sprites/tileDataAlien");
 
             sprBackground = new Texture2D(Game1.graphics.GraphicsDevice, 160, 144);
             sprObjects = new Texture2D(Game1.graphics.GraphicsDevice, 160, 144);
 
-            sprReplacementTiles = Content.Load<Texture2D>("sprites/marioColor");
+            sprReplacementTiles = Content.Load<Texture2D>("sprites/textureDumpAlien");
             sprReplacementTilesData = new Color[sprReplacementTiles.Width * sprReplacementTiles.Height];
             sprReplacementTiles.GetData(sprReplacementTilesData);
 
-            //sprTileData = Content.Load<Texture2D>("sprites/marioColor");
-            //tilesetData = new Color[sprTileData.Width * sprTileData.Height];
-            //sprTileData.GetData(tilesetData);
-
-            gbRenderTarget = new RenderTarget2D(Game1.graphics.GraphicsDevice, 160, 144);
+            debugFramePos = new Point(5, 5);
+            debugBackgroundPos = new Point(160 * scale + 10, 5);
+            debugWindowPos = new Point(debugBackgroundPos.X + (256 * scale) + 5, 5);
+            debugObjectPos = new Point(debugBackgroundPos.X, (256 * scale) + 10);
+            debugTilePos = new Point(5, 144 * scale + 10);
         }
 
         public void Update()
@@ -73,12 +55,11 @@ namespace GameBoyMono
                 updateTileset = false;
                 LoadTexture(ref sprTileData);
             }
-            //if (InputHandler.KeyPressed(Microsoft.Xna.Framework.Input.Keys.T))
-            //{
-            //    LoadTexture(ref sprTileData);
-            //}
+
             if (InputHandler.KeyPressed(Microsoft.Xna.Framework.Input.Keys.T))
-                SaveTileData();
+                SaveTileData("textureDump.png");
+
+            scale = debugMode ? 2 : 1;
         }
 
         /*
@@ -101,166 +82,129 @@ namespace GameBoyMono
             FF49 - OBP1 - Object Palette 1 Data (R/W): for sprite palett 1
         */
 
-        public void Draw()
+        public void Draw(SpriteBatch spriteBatch)
         {
-            if (!debugMode)
-                Game1.graphics.GraphicsDevice.SetRenderTarget(gbRenderTarget);
+            // draw background + objects
+            spriteBatch.Draw(sprBackground, new Rectangle(debugFramePos.X, debugFramePos.Y, sprBackground.Width * scale, sprBackground.Height * scale), Color.White);
+            spriteBatch.Draw(sprObjects, new Rectangle(debugFramePos.X, debugFramePos.Y, sprBackground.Width * scale, sprBackground.Height * scale), Color.White);
 
-            Game1.graphics.GraphicsDevice.Clear(Color.Pink);
-            Game1.spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null);//, gbShader);
+            spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugTilePos.X, debugTilePos.Y, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
 
-            // draw the tiledata
-            int scale = debugMode ? 2 : 1;
+            if (sprTileData != null)
+                spriteBatch.Draw(sprTileData, new Rectangle(debugTilePos.X, debugTilePos.Y, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
 
-            // set background colors
-            gbShader.Parameters["color1"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);
-            gbShader.Parameters["color2"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03]);
-            gbShader.Parameters["color3"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
-            gbShader.Parameters["color4"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
-            // draw window + background
-            Game1.spriteBatch.Draw(sprBackground, new Rectangle(0, 0, sprBackground.Width * scale, sprBackground.Height * scale), Color.White);
-
-            gbShader.Parameters["color1"].SetValue(objColors[0]);
-            gbShader.Parameters["color2"].SetValue(objColors[1]);
-            gbShader.Parameters["color3"].SetValue(objColors[2]);
-            gbShader.Parameters["color4"].SetValue(objColors[3]);
-
-            // draw objects
-            Game1.spriteBatch.Draw(sprObjects, new Rectangle(0, 0, sprObjects.Width * scale, sprObjects.Height * scale), Color.White);
-
-            if (debugMode)
+            // LCD Display Enable
+            if ((Game1.gbCPU.generalMemory.memory[0xFF40] & 0x80) == 0x00)
             {
-                // set background colors
-                gbShader.Parameters["color1"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);
-                gbShader.Parameters["color2"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 2) & 0x03]);
-                gbShader.Parameters["color3"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 4) & 0x03]);
-                gbShader.Parameters["color4"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 6) & 0x03]);
+                //spriteBatch.End();
+                //return;
+            }
+
+            int drawPosX = Game1.gbCPU.generalMemory.memory[0xFF43];
+            int drawPosY = Game1.gbCPU.generalMemory.memory[0xFF42];
+
+            // FF40 - LCDC - LCD Control(R / W)
+            // Bit 7 - LCD Display Enable               (0 = Off, 1 = On)
+            // Bit 6 - Window Tile Map Display Select   (0 = 9800 - 9BFF, 1 = 9C00 - 9FFF)
+            // Bit 5 - Window Display Enable            (0 = Off, 1 = On)
+            // Bit 4 - BG & Window Tile Data Select     (0 = 8800 - 97FF, 1 = 8000 - 8FFF)
+            // Bit 3 - BG Tile Map Display Select       (0 = 9800 - 9BFF, 1 = 9C00 - 9FFF)
+            // Bit 2 - OBJ(Sprite) Size                 (0 = 8x8, 1 = 8x16)
+            // Bit 1 - OBJ(Sprite) Display Enable       (0 = Off, 1 = On)
+            // Bit 0 - BG Display(for CGB see below)    (0 = Off, 1 = On)
+            byte LCDC = Game1.gbCPU.generalMemory.memory[0xFF40];
+            bool LCDC_Bit5 = (LCDC & 0x20) == 0x20;
+            bool LCDC_Bit4 = (LCDC & 0x10) == 0x10; // true=first tile bank, false=second tile bank
+            bool LCDC_Bit3 = (LCDC & 0x08) == 0x08; // 0=9800-9BFF, 1=9C00-9FFF
+
+            int startAddress = LCDC_Bit3 ? 0x9C00 : 0x9800;
+
+            spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugBackgroundPos.X, debugBackgroundPos.Y, 256 * scale, 256 * scale), Color.White);
+
+            // LCDC Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
+            // draw the background
+            for (int i = startAddress; i < startAddress + 1024; i++)
+            {
+                int data = LCDC_Bit4 ? Game1.gbCPU.generalMemory.memory[i] : (sbyte)Game1.gbCPU.generalMemory.memory[i] + 256;
+
+                int posX = ((i - startAddress) % 32) * 8;
+                int posY = ((i - startAddress) / 32) * 8;
 
                 if (sprTileData != null)
-                    Game1.spriteBatch.Draw(sprTileData, new Rectangle(0, 350, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
+                    spriteBatch.Draw(sprTileData, new Rectangle(debugBackgroundPos.X + posX * scale, debugBackgroundPos.Y + posY * scale, 8 * scale, 8 * scale),
+                        new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
+            }
 
-                // LCD Display Enable
-                if ((Game1.gbCPU.generalMemory.memory[0xFF40] & 0x80) == 0x00)
-                {
-                    //spriteBatch.End();
-                    //return;
-                }
 
-                int drawPosX = Game1.gbCPU.generalMemory.memory[0xFF43];
-                int drawPosY = Game1.gbCPU.generalMemory.memory[0xFF42];
+            // Window
+            spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugWindowPos.X, debugWindowPos.Y, 256 * scale, 256 * scale), Color.White);
 
-                // FF40 - LCDC - LCD Control(R / W)
-                // Bit 7 - LCD Display Enable               (0 = Off, 1 = On)
-                // Bit 6 - Window Tile Map Display Select   (0 = 9800 - 9BFF, 1 = 9C00 - 9FFF)
-                // Bit 5 - Window Display Enable            (0 = Off, 1 = On)
-                // Bit 4 - BG & Window Tile Data Select     (0 = 8800 - 97FF, 1 = 8000 - 8FFF)
-                // Bit 3 - BG Tile Map Display Select       (0 = 9800 - 9BFF, 1 = 9C00 - 9FFF)
-                // Bit 2 - OBJ(Sprite) Size                 (0 = 8x8, 1 = 8x16)
-                // Bit 1 - OBJ(Sprite) Display Enable       (0 = Off, 1 = On)
-                // Bit 0 - BG Display(for CGB see below)    (0 = Off, 1 = On)
-                byte LCDC = Game1.gbCPU.generalMemory.memory[0xFF40];
-                bool LCDC_Bit5 = (LCDC & 0x20) == 0x20;
-                bool LCDC_Bit4 = (LCDC & 0x10) == 0x10; // true=first tile bank, false=second tile bank
-                bool LCDC_Bit3 = (LCDC & 0x08) == 0x08; // 0=9800-9BFF, 1=9C00-9FFF
+            if (LCDC_Bit5)
+            {
+                // Window Position
+                bool LCDC_Bit6 = (LCDC & 0x40) == 0x40; // Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
+                                                        //LCDC_Bit6 = true;
+                startAddress = LCDC_Bit6 ? 0x9C00 : 0x9800;
 
-                int startAddress = LCDC_Bit3 ? 0x9C00 : 0x9800;
-
-                // LCDC Bit 3 - BG Tile Map Display Select     (0=9800-9BFF, 1=9C00-9FFF)
-                // draw the background
                 for (int i = startAddress; i < startAddress + 1024; i++)
                 {
-                    int data = (sbyte)Game1.gbCPU.generalMemory.memory[i] + 128 + 0x800;
+                    int data = (sbyte)Game1.gbCPU.generalMemory.memory[i] + 256;
                     if (LCDC_Bit4)
                         data = Game1.gbCPU.generalMemory.memory[i];
 
-                    int posX = ((i - startAddress) % 32) * 8 - drawPosX;
-                    int posY = ((i - startAddress) / 32) * 8 - drawPosY;
+                    int posX = ((i - startAddress) % 32) * 8;
+                    int posY = ((i - startAddress) / 32) * 8;
 
-                    if (posX + 8 < 0)
-                        posX += 256;
-                    if (posY + 8 < 0)
-                        posY += 256;
-
-                    if (sprTileData != null)
-                        Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX * scale, debugDrawPos.Y + posY * scale, 8 * scale, 8 * scale),
-                            new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
-                }
-
-                // Window
-                if (LCDC_Bit5)
-                {
-                    // Window Position
-                    byte WY = Game1.gbCPU.generalMemory.memory[0xFF4A];
-                    byte WX = Game1.gbCPU.generalMemory.memory[0xFF4B];
-                    bool LCDC_Bit6 = (LCDC & 0x40) == 0x40; // Window Tile Map Display Select (0=9800-9BFF, 1=9C00-9FFF)
-                                                            //LCDC_Bit6 = true;
-                    startAddress = LCDC_Bit6 ? 0x9C00 : 0x9800;
-
-                    for (int i = startAddress; i < startAddress + 1024; i++)
-                    {
-                        int data = (sbyte)Game1.gbCPU.generalMemory.memory[i] + 128 + 0x800;
-                        if (LCDC_Bit4)
-                            data = Game1.gbCPU.generalMemory.memory[i];
-
-                        int posX = (i - startAddress) % 32 + WX;
-                        int posY = (i - startAddress) / 32 + WY;
-                        Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX * 8 * scale, debugDrawPos.Y + posY * 8 * scale - 7 * scale, 8 * scale, 8 * scale),
-                            new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
-                    }
-                }
-
-                bool LCDC_Bit2 = (LCDC & 0x04) == 0x04; // obj size (0=8x8, 1=8x16)
-
-                // draw the objects
-                for (int i = 0xFE00; i < 0xFE9F; i += 4)
-                {
-                    // Byte0-2:
-                    int posY = (Game1.gbCPU.generalMemory.memory[i] - 16) * scale;
-                    int posX = (Game1.gbCPU.generalMemory.memory[i + 1] - 8) * scale;
-                    byte tileNumber = Game1.gbCPU.generalMemory.memory[i + 2];
-                    byte attributes = Game1.gbCPU.generalMemory.memory[i + 3];
-                    // Byte3:
-                    // Bit7   OBJ-to-BG Priority (0=OBJ Above BG, 1=OBJ Behind BG color 1-3)
-                    // (Used for both BG and Window. BG color 0 is always behind OBJ)
-                    // Bit6   Y flip          (0=Normal, 1=Vertically mirrored)
-                    // Bit5   X flip          (0=Normal, 1=Horizontally mirrored)
-                    // Bit4   Palette number  **Non CGB Mode Only** (0=OBP0, 1=OBP1)
-                    // Bit3   Tile VRAM-Bank  **CGB Mode Only**     (0=Bank 0, 1=Bank 1)
-                    // Bit2-0 Palette number  **CGB Mode Only**     (OBP0-7)
-
-                    // FF48 - OBP0 - Object Palette 0 Data (R/W)
-                    // FF49 - OBP1 - Object Palette 1 Data (R/W)
-
-                    SpriteEffects sprEffect = SpriteEffects.None;
-                    if ((attributes & 0x40) == 0x40)
-                        sprEffect |= SpriteEffects.FlipVertically;
-                    if ((attributes & 0x20) == 0x20)
-                        sprEffect |= SpriteEffects.FlipHorizontally;
-
-                    // set object colors
-                    gbShader.Parameters["color1"].SetValue(new Vector4(0, 0, 0, 0));
-                    gbShader.Parameters["color2"].SetValue(objColors[(Game1.gbCPU.generalMemory[0xFF48 + ((attributes >> 4) & 0x01)] >> 2) & 0x03]);
-                    gbShader.Parameters["color3"].SetValue(objColors[(Game1.gbCPU.generalMemory[0xFF48 + ((attributes >> 4) & 0x01)] >> 4) & 0x03]);
-                    gbShader.Parameters["color4"].SetValue(objColors[(Game1.gbCPU.generalMemory[0xFF48 + ((attributes >> 4) & 0x01)] >> 6) & 0x03]);
-
-                    if (LCDC_Bit2)
-                        tileNumber = (byte)(tileNumber & 0xFE);
-
-                    // draw the tile
-                    if (sprTileData != null)
-                        Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX, debugDrawPos.Y + posY, 8 * scale, 8 * scale),
-                            new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8), Color.White, 0, Vector2.Zero, sprEffect, 0);
-
-                    // draw the second part of the sprite if in 8x16 mode
-                    if (LCDC_Bit2)
-                        Game1.spriteBatch.Draw(sprTileData, new Rectangle(debugDrawPos.X + posX, debugDrawPos.Y + posY + 8, 8 * scale, 8 * scale),
-                            new Rectangle(((tileNumber + 1) % 16) * 8, ((tileNumber + 1) / 16) * 8, 8, 8), Color.White, 0, Vector2.Zero, sprEffect, 0);
+                    spriteBatch.Draw(sprTileData, new Rectangle(debugWindowPos.X + posX * scale, debugWindowPos.Y + posY * scale, 8 * scale, 8 * scale),
+                        new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
                 }
             }
 
-            Game1.spriteBatch.End();
+            bool LCDC_Bit2 = (LCDC & 0x04) == 0x04; // obj size (0=8x8, 1=8x16)
 
-            Game1.graphics.GraphicsDevice.SetRenderTarget(null);
+            // draw the objects
+            for (int i = 0xFE00; i < 0xFE9F; i += 4)
+            {
+                // Byte0-2:
+                int posY = (Game1.gbCPU.generalMemory.memory[i] - 16) * scale;
+                int posX = (Game1.gbCPU.generalMemory.memory[i + 1] - 8) * scale;
+
+                posX = debugObjectPos.X + (i - 0xFE00) / 4 * 10 * scale;
+                posY = debugObjectPos.Y;
+
+                byte tileNumber = Game1.gbCPU.generalMemory.memory[i + 2];
+                byte attributes = Game1.gbCPU.generalMemory.memory[i + 3];
+                // Byte3:
+                // Bit7   OBJ-to-BG Priority (0=OBJ Above BG, 1=OBJ Behind BG color 1-3)
+                // (Used for both BG and Window. BG color 0 is always behind OBJ)
+                // Bit6   Y flip          (0=Normal, 1=Vertically mirrored)
+                // Bit5   X flip          (0=Normal, 1=Horizontally mirrored)
+                // Bit4   Palette number  **Non CGB Mode Only** (0=OBP0, 1=OBP1)
+                // Bit3   Tile VRAM-Bank  **CGB Mode Only**     (0=Bank 0, 1=Bank 1)
+                // Bit2-0 Palette number  **CGB Mode Only**     (OBP0-7)
+
+                // FF48 - OBP0 - Object Palette 0 Data (R/W)
+                // FF49 - OBP1 - Object Palette 1 Data (R/W)
+
+                SpriteEffects sprEffect = SpriteEffects.None;
+                if ((attributes & 0x40) == 0x40)
+                    sprEffect |= SpriteEffects.FlipVertically;
+                if ((attributes & 0x20) == 0x20)
+                    sprEffect |= SpriteEffects.FlipHorizontally;
+
+                if (LCDC_Bit2)
+                    tileNumber = (byte)(tileNumber & 0xFE);
+
+                // draw the tile
+                if (sprTileData != null)
+                    spriteBatch.Draw(sprTileData, new Rectangle(posX, posY, 8 * scale, 8 * scale),
+                        new Rectangle((tileNumber % 16) * 8, (tileNumber / 16) * 8, 8, 8), Color.White, 0, Vector2.Zero, sprEffect, 0);
+
+                // draw the second part of the sprite if in 8x16 mode
+                if (LCDC_Bit2)
+                    spriteBatch.Draw(sprTileData, new Rectangle(posX, posY + 8 * scale, 8 * scale, 8 * scale),
+                        new Rectangle(((tileNumber + 1) % 16) * 8, ((tileNumber + 1) / 16) * 8, 8, 8), Color.White, 0, Vector2.Zero, sprEffect, 0);
+            }
         }
 
         public void RenderLine(int scanLine)
@@ -268,8 +212,8 @@ namespace GameBoyMono
             if (0 > scanLine || scanLine > 143)
                 return;
 
-            int drawPosX = Game1.gbCPU.generalMemory.memory[0xFF43];
-            int drawPosY = Game1.gbCPU.generalMemory.memory[0xFF42];
+            int bgPosX = Game1.gbCPU.generalMemory.memory[0xFF43];
+            int bgPosY = Game1.gbCPU.generalMemory.memory[0xFF42];
 
             // FF40 - LCDC - LCD Control(R / W)
             byte LCDC = Game1.gbCPU.generalMemory.memory[0xFF40];
@@ -300,11 +244,11 @@ namespace GameBoyMono
                 // draw background
                 if (drawBG)
                 {
-                    int start = Game1.gbCPU.generalMemory.memory[startAddress + (((i + drawPosX) % 256) / 8) + ((((scanLine + drawPosY) % 256) / 8) * 32)];
+                    int start = Game1.gbCPU.generalMemory.memory[startAddress + (((i + bgPosX) % 256) / 8) + ((((scanLine + bgPosY) % 256) / 8) * 32)];
                     if (!LCDC_Bit4)
                         start = (sbyte)start + 256;
 
-                    colorData1[scanLine * 160 + i] = tilesetData[(start % 16) * 8 + (start / 16) * (16 * 8 * 8) + ((i + drawPosX) % 8) + ((scanLine + drawPosY) % 8) * (16 * 8)];
+                    colorData1[scanLine * 160 + i] = tilesetData[(start % 16) * 8 + (start / 16) * (16 * 8 * 8) + ((i + bgPosX) % 8) + ((scanLine + bgPosY) % 8) * (16 * 8)];
                 }
 
                 // draw window
@@ -329,7 +273,7 @@ namespace GameBoyMono
                     colorData1[scanLine * 160 + i] = Color.White;
 
                 // draw the objects
-                if (drawOBJ)
+                if (true)
                 {
                     for (int j = 0xFE00; j < 0xFE9F; j += 4)
                     {
@@ -339,6 +283,10 @@ namespace GameBoyMono
 
                         if (posX > i || i >= posX + 8 || posY > scanLine || scanLine >= posY + (objSize ? 16 : 8))
                             continue;
+                        else
+                        {
+
+                        }
 
                         byte tileNumber = Game1.gbCPU.generalMemory.memory[j + 2];
                         byte attributes = Game1.gbCPU.generalMemory.memory[j + 3];
@@ -354,7 +302,7 @@ namespace GameBoyMono
                         bool inBackground = (attributes & 0x80) == 0x80;
                         bool flipX = (attributes & 0x20) == 0x20;
                         bool flipY = (attributes & 0x40) == 0x40;
-                        byte palette = (byte)((attributes >> 4) & 0x01);
+                        bool palette = (attributes & 0x10) == 0x10;
 
                         if (inBackground && colorData1[scanLine * 160 + i] != Color.White)
                             continue;
@@ -373,12 +321,15 @@ namespace GameBoyMono
                         if (flipY)
                             spriteY = 7 - spriteY;
 
-                        byte b = tilesetByteData[(tileNumber % 16) * 8 + (tileNumber / 16) * (16 * 8 * 8) + spriteX + spriteY * (16 * 8)];
+                        byte b = tilesetByteData[(tileNumber % 16) * 8 + (tileNumber / 16) * (16 * 8 * 8) + spriteY * (16 * 8) + spriteX];
 
-                        int colorNumber = (Game1.gbCPU.generalMemory[0xFF48 + palette] >> ((b * 2))) & 0x03;
+                        int colorNumber = (Game1.gbCPU.generalMemory[0xFF48 + (palette ? 1 : 0)] >> ((b * 2))) & 0x03;
 
                         float shade = (3 - colorNumber) / 3f;
                         Color color = new Color(shade, shade, shade, 1);
+
+                        if (b == 0)
+                            color = Color.Transparent;
 
                         // if sprite is not white (transparent)
                         //if (b > 0)
@@ -386,9 +337,29 @@ namespace GameBoyMono
 
                         Color pixel = tilesetData[(tileNumber % 16) * 8 + (tileNumber / 16) * (16 * 8 * 8) + spriteY * (16 * 8) + spriteX];
 
+                        if (obj1 != Game1.gbCPU.generalMemory.memory[0xFF49])
+                        {
+                            int dumpColor = (obj1 >> ((b * 2))) & 0x03;
+
+                            //colorNumber = 3 - colorNumber;
+                            //dumpColor = 3 - dumpColor;
+
+                            int change = dumpColor - colorNumber;
+                            int addChange = (int)((change / 3d) * 255);
+
+                            pixel = new Color(MathHelper.Clamp(pixel.R + addChange, 0, 255),
+                                MathHelper.Clamp(pixel.G + addChange, 0, 255), MathHelper.Clamp(pixel.B + addChange, 0, 255), pixel.A);
+                        }
+
+                        //pixel = color;
+
                         if (pixel != Color.Transparent)
                             colorData2[scanLine * 160 + i] = pixel;
                     }
+                }
+                else
+                {
+
                 }
             }
 
@@ -400,7 +371,7 @@ namespace GameBoyMono
             }
         }
 
-        Color[] tilesetData;
+        Color[] tilesetData;//, originalTilesetData;
         byte[] tilesetByteData;
         void LoadTexture(ref Texture2D sprTexture)
         {
@@ -450,9 +421,10 @@ namespace GameBoyMono
                             // convert the number to a color
                             float color = (3 - data) / 3f;
 
-                            Color cl = new Color(color, color, color, 1);
+                            Color cl = data == 0 ? Color.Transparent : new Color(color, color, color, 1);
 
                             tilesetData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] = cl;
+                            //originalTilesetData[((y + (iy * 8)) * sprTexture.Width) + (ix * 8) + x] = cl;
                         }
                     }
 
@@ -477,28 +449,37 @@ namespace GameBoyMono
             sprTexture.SetData(tilesetData);
         }
 
-        void SaveTileData()
+        void SaveTileData(string path)
         {
             using (BinaryWriter writer = new BinaryWriter(File.Open("tileData", FileMode.Create)))
             {
+                // write palette data
+                writer.Write(Game1.gbCPU.generalMemory.memory[0xFF47]);
+                writer.Write(Game1.gbCPU.generalMemory.memory[0xFF48]);
+                writer.Write(Game1.gbCPU.generalMemory.memory[0xFF49]);
+
                 for (int i = 0; i < 0x9800 - 0x8000; i++)
                 {
                     writer.Write(Game1.gbCPU.generalMemory.memory[0x8000 + i]);
                 }
             }
 
-            using (Stream writer = File.Create("textureDump.png"))
+            using (Stream writer = File.Create(path))
             {
                 sprTileData.SaveAsPng(writer, sprTileData.Width, sprTileData.Height);
             }
         }
 
-        void LoadTileData()
+        void LoadTileData(string path)
         {
-            string strPath = "Content/sprites/tileData";
+            string strPath = path;
             if (File.Exists(strPath))
                 using (BinaryReader writer = new BinaryReader(File.Open(strPath, FileMode.Open)))
                 {
+                    bgp = writer.ReadByte();
+                    obj0 = writer.ReadByte();
+                    obj1 = writer.ReadByte();
+
                     byte[] tile = new byte[16];
                     // load all tiles
                     for (int j = 0; j < 384; j++)

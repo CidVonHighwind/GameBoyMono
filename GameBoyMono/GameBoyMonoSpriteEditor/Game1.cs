@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.IO;
 
 namespace GameBoyMonoSpriteEditor
 {
@@ -50,6 +51,36 @@ namespace GameBoyMonoSpriteEditor
             spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        void SaveTileData()
+        {
+            using (BinaryWriter writer = new BinaryWriter(File.Open("tileData", FileMode.Create)))
+            {
+            }
+
+            using (Stream writer = File.Create("textureDump.png"))
+            {
+
+            }
+        }
+
+        void LoadTileData()
+        {
+            string strPath = "Content/sprites/tileData";
+            if (File.Exists(strPath))
+                using (BinaryReader writer = new BinaryReader(File.Open(strPath, FileMode.Open)))
+                {
+                    byte[] tile = new byte[16];
+                    // load all tiles
+                    for (int j = 0; j < 384; j++)
+                    {
+                        // read one tile
+                        for (int i = 0; i < 16; i++)
+                            tile[i] = writer.ReadByte();
+                        
+                    }
+                }
         }
     }
 }
