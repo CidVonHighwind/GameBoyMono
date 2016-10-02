@@ -19,18 +19,6 @@
 /processorParam:TextureFormat=Compressed
 /build:font0.spritefont
 
-#begin gbShader.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:gbShader.fx
-
-#begin gbShader1.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:gbShader1.fx
-
 #begin sprites/marioColor.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -99,4 +87,28 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:gbc.png
+
+#begin noise.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:noise.png
+
+#begin shaders/colorShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/colorShader.fx
+
+#begin shaders/screenShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:shaders/screenShader.fx
 

@@ -4,13 +4,12 @@
     {
         public byte[] ROM;
         public byte[] RAM;
-        byte type;
-        byte selectedROMBank = 1;
-        byte selectedRAMBank;
 
-        bool ROMRAMMode;
+        public byte type;
+        public byte selectedROMBank = 1;
+        public byte selectedRAMBank;
 
-        bool enableRAM;
+        public bool ROMRAMMode, enableRAM;
         
         public string romName;
         public byte cartridgeType, romSize, ramSize, destinationCode;

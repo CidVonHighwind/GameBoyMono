@@ -10,11 +10,12 @@ namespace GameBoyMono
     public class Game1 : Game
     {
         Color backgroundColor = new Color(74, 65, 42);
+        Color screenBackgroundColor = new Color(163, 169, 129);
 
         public static GraphicsDeviceManager graphics;
         public static SpriteBatch spriteBatch;
 
-        public static Texture2D sprWhite, sprMemory;
+        public static Texture2D sprWhite, sprMemory, sprBackground;
         SpriteFont font0;
         Effect gbShader, gbColorShader;
 
@@ -26,12 +27,13 @@ namespace GameBoyMono
         Rectangle renderRectangle;
 
         Texture2D sprOverlay;
-        Rectangle overlayWindow = new Rectangle(640, 252, 640, 572);
+        //Rectangle overlayWindow = new Rectangle(640, 252, 640, 572);
+        Rectangle overlayWindow = new Rectangle(648, 260, 624, 556);
 
         public static string[] parameter;
 
         float renderScale;
-        bool debugMode = true;
+        bool debugMode = false;
 
         public List<string> romList = new List<string>();
 
@@ -42,7 +44,7 @@ namespace GameBoyMono
         int buttonHeight = 30;
 
         Vector4[] bgColors = new Vector4[4], objColors = new Vector4[4];
-        
+
         string[] cartridgeTypeStrings = new string[] {
             "ROM ONLY", "MBC1", "MBC1+RAM", "MBC1+RAM+BATTERY", "ERROR", "MBC2", "MBC2+B", "ERROR", "ROM+RAM", "ROM+RAM+BATTERY",
             "ERROR", "MMM01", "MMM01+RAM", "MMM01+RAM+BATTERY", "ERROR", "MBC3+TIMER+BATTERY", "MBC3", "MBC3+RAM",
@@ -84,31 +86,32 @@ namespace GameBoyMono
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
             font0 = Content.Load<SpriteFont>("font0");
-            gbColorShader = Content.Load<Effect>("gbShader");
-            gbShader = Content.Load<Effect>("gbShader1");
+            gbColorShader = Content.Load<Effect>("shaders/colorShader");
+            gbShader = Content.Load<Effect>("shaders/screenShader");
 
             sprOverlay = Content.Load<Texture2D>("gbc");
+            sprBackground = Content.Load<Texture2D>("noise");
 
             sprMemory = new Texture2D(graphics.GraphicsDevice, 512, 1024);
 
             sprWhite = new Texture2D(graphics.GraphicsDevice, 1, 1);
             sprWhite.SetData(new Color[] { Color.White });
 
-            gbRenderTarget = new RenderTarget2D(graphics.GraphicsDevice, 160, 144);
+            gbRenderTarget = new RenderTarget2D(graphics.GraphicsDevice, 160, 144, false, SurfaceFormat.Color, DepthFormat.None);
 
             gbRenderer.Load(Content);
 
             LoadRomList(parameter[0]);
-            
-            bgColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-            bgColors[1] = new Vector4(0.0f, 0.6f, 0.6f, 1.0f);
-            bgColors[2] = new Vector4(0.0f, 0.3f, 0.3f, 1.0f);
-            bgColors[3] = new Vector4(0.0f, 0.03f, 0.03f, 1.0f);
 
-            objColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-            objColors[1] = new Vector4(0.8f, 0.5f, 0.5f, 1.0f);
-            objColors[2] = new Vector4(0.5f, 0.2f, 0.2f, 1.0f);
-            objColors[3] = new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+            bgColors[0] = new Vector4(0, 0, 0, 0.05f);
+            bgColors[1] = new Vector4(0, 0, 0, 0.4f);
+            bgColors[2] = new Vector4(0, 0, 0, 0.6f);
+            bgColors[3] = new Vector4(0, 0, 0, 0.8f);
+
+            objColors[0] = new Vector4(1.0f, 1.0f, 1.0f, 0.05f);
+            objColors[1] = new Vector4(0.8f, 0.5f, 0.5f, 0.3f);
+            objColors[2] = new Vector4(0.5f, 0.2f, 0.2f, 0.5f);
+            objColors[3] = new Vector4(0.0f, 0.0f, 0.0f, 0.7f);
 
             SearchTree tree = new SearchTree();
             tree.AddItem(new byte[] { 0xFF, 0xFA, 0x0F, 0xFF }, 12);
@@ -116,8 +119,6 @@ namespace GameBoyMono
             tree.AddItem(new byte[] { 0xFF, 0xCA, 0xFF, 0xFF }, 554);
 
             int search = tree.Search(new byte[] { 0xFF, 0xFA, 0x0F, 0xFF });
-
-            gbCPU.Start();
         }
 
         public void UpdateRenderTargets()
@@ -133,7 +134,8 @@ namespace GameBoyMono
             renderRectangle = new Rectangle(graphics.PreferredBackBufferWidth / 2 - width / 2,
                 graphics.PreferredBackBufferHeight / 2 - height / 2, width, height);
 
-            shaderRenderTarget = new RenderTarget2D(graphics.GraphicsDevice, 160 * (int)renderScale, 144 * (int)renderScale);
+            shaderRenderTarget = new RenderTarget2D(graphics.GraphicsDevice, 160 * (int)renderScale,
+                144 * (int)renderScale, false, SurfaceFormat.Color, DepthFormat.None);
         }
 
         protected override void Update(GameTime gameTime)
@@ -161,12 +163,16 @@ namespace GameBoyMono
             {
                 // update the cpu
                 gbCPU.Update(gameTime);
+                // update the renderer
+                gbRenderer.Update();
 
                 if (debugMode)
                     UpdateSprMemory();
 
                 if (InputHandler.KeyPressed(Keys.F1))
                     debugMode = !debugMode;
+                if (InputHandler.KeyPressed(Keys.Escape))
+                    romLoaded = false;
             }
 
             base.Update(gameTime);
@@ -175,25 +181,41 @@ namespace GameBoyMono
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(backgroundColor);
-
-            spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
+            graphics.GraphicsDevice.Clear(backgroundColor);
 
             if (romLoaded)
             {
-                // update the renderer
-                gbRenderer.Update();
-
                 if (debugMode)
                 {
+                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
+
+                    // draw debug screen
                     gbRenderer.Draw(spriteBatch);
+
+                    string strDebugger = "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
+                        "BC: 0x" + string.Format("{0:X}", gbCPU.reg_BC) + "\n" +
+                        "DE: 0x" + string.Format("{0:X}", gbCPU.reg_DE) + "\n" +
+                        "HL: 0x" + string.Format("{0:X}", gbCPU.reg_HL) + "\n" +
+                        "SP: 0x" + string.Format("{0:X}", gbCPU.reg_SP) + "\n" +
+                        "PC: 0x" + string.Format("{0:X}", gbCPU.reg_PC) + "\n\n" +
+
+                        "cartridgeType: " + cartridgeTypeStrings[gbCPU.cartridge.cartridgeType] + "\n" +
+                        "ROM Size: " + gbCPU.cartridge.romSize + "\n" +
+                        "RAM Size: " + gbCPU.cartridge.ramSize + "\n" +
+                        "destination code: " + gbCPU.cartridge.destinationCode;
+
+                    spriteBatch.DrawString(font0, strDebugger, new Vector2(5, graphics.PreferredBackBufferHeight - font0.MeasureString(strDebugger).Y - 5), Color.White);
+
+                    //spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
+
+                    spriteBatch.End();
                 }
                 else
                 {
-                    spriteBatch.End();
                     graphics.GraphicsDevice.SetRenderTarget(gbRenderTarget);
+                    graphics.GraphicsDevice.Clear(Color.Transparent);
 
-                    spriteBatch.Begin(SpriteSortMode.Immediate, null, SamplerState.PointClamp, null, null, gbColorShader);
+                    spriteBatch.Begin(SpriteSortMode.BackToFront, null, SamplerState.PointClamp, null, null, gbColorShader);
 
                     // draw window + background
                     gbColorShader.Parameters["color1"].SetValue(bgColors[(Game1.gbCPU.generalMemory[0xFF47] >> 0) & 0x03]);
@@ -203,80 +225,121 @@ namespace GameBoyMono
 
                     spriteBatch.Draw(gbRenderer.sprBackground, Vector2.Zero, Color.White);
 
-                    // draw objects
-                    gbColorShader.Parameters["color1"].SetValue(objColors[0]);
-                    gbColorShader.Parameters["color2"].SetValue(objColors[1]);
-                    gbColorShader.Parameters["color3"].SetValue(objColors[2]);
-                    gbColorShader.Parameters["color4"].SetValue(objColors[3]);
+                    //// draw objects
+                    //gbColorShader.Parameters["color1"].SetValue(objColors[0]);
+                    //gbColorShader.Parameters["color2"].SetValue(objColors[1]);
+                    //gbColorShader.Parameters["color3"].SetValue(objColors[2]);
+                    //gbColorShader.Parameters["color4"].SetValue(objColors[3]);
 
                     spriteBatch.Draw(gbRenderer.sprObjects, Vector2.Zero, Color.White);
 
                     spriteBatch.End();
-
 
                     gbShader.Parameters["spriteWidth"].SetValue(shaderRenderTarget.Width);
                     gbShader.Parameters["spriteHeight"].SetValue(shaderRenderTarget.Height);
                     gbShader.Parameters["scale"].SetValue((int)renderScale);
 
                     graphics.GraphicsDevice.SetRenderTarget(shaderRenderTarget);
-                    graphics.GraphicsDevice.Clear(Color.White);
+                    graphics.GraphicsDevice.Clear(Color.Transparent);
 
-                    if (InputHandler.KeyDown(Keys.Q))
-                        spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, null);
-                    else
-                        spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
+                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null, gbShader);
 
                     spriteBatch.Draw(gbRenderTarget, new Rectangle(0, 0, shaderRenderTarget.Width, shaderRenderTarget.Height), Color.White);
 
                     spriteBatch.End();
+
                     graphics.GraphicsDevice.SetRenderTarget(null);
-                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
+
+                    // draw the output
+                    spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.AnisotropicWrap, null, null);
+
+                    spriteBatch.Draw(sprBackground, new Rectangle(0, 0, graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight),
+                        new Rectangle(0, 0, graphics.PreferredBackBufferWidth, graphics.PreferredBackBufferHeight), screenBackgroundColor);
+
+                    // draw the scaled up output
+                    spriteBatch.Draw(shaderRenderTarget, renderRectangle, Color.White);
+
+                    float scaleX = renderRectangle.Width / (float)overlayWindow.Width;
+                    float scaleY = renderRectangle.Height / (float)overlayWindow.Height;
+
+                    spriteBatch.Draw(sprOverlay, new Rectangle(-(int)(overlayWindow.X * scaleX) + renderRectangle.X,
+                        -(int)(overlayWindow.Y * scaleY) + renderRectangle.Y, (int)(sprOverlay.Width * scaleX), (int)(sprOverlay.Height * scaleY)), Color.White);
+
+                    spriteBatch.End();
                 }
             }
-
-
-            if (!romLoaded)
+            else
             {
+                spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
+
                 if (InputHandler.MouseIntersect(new Rectangle(0, 0, 500, buttonHeight * romList.Count)))
                     spriteBatch.Draw(sprWhite, new Rectangle(0, (InputHandler.MousePosition().Y / buttonHeight) * buttonHeight, 500, buttonHeight), Color.White);
 
                 for (int i = 0; i < romList.Count; i++)
                     spriteBatch.DrawString(font0, Path.GetFileName(romList[i]), new Vector2(0, i * buttonHeight), Color.Black);
+
+                spriteBatch.End();
             }
-
-            if (!debugMode)
-            {
-                // draw the scaled up output
-                spriteBatch.Draw(shaderRenderTarget, renderRectangle, Color.White);
-
-                float scaleX = renderRectangle.Width / (float)overlayWindow.Width;
-                float scaleY = renderRectangle.Height / (float)overlayWindow.Height;
-
-                spriteBatch.Draw(sprOverlay, new Rectangle(-(int)(overlayWindow.X * scaleX) + renderRectangle.X,
-                    -(int)(overlayWindow.Y * scaleY) + renderRectangle.Y, (int)(sprOverlay.Width * scaleX), (int)(sprOverlay.Height * scaleY)), Color.White);
-            }
-            else
-            {
-                string strDebugger = "AF: 0x" + string.Format("{0:X}", gbCPU.reg_AF) + "\n" +
-                                        "BC: 0x" + string.Format("{0:X}", gbCPU.reg_BC) + "\n" +
-                                        "DE: 0x" + string.Format("{0:X}", gbCPU.reg_DE) + "\n" +
-                                        "HL: 0x" + string.Format("{0:X}", gbCPU.reg_HL) + "\n" +
-                                        "SP: 0x" + string.Format("{0:X}", gbCPU.reg_SP) + "\n" +
-                                        "PC: 0x" + string.Format("{0:X}", gbCPU.reg_PC) + "\n\n" +
-
-                                        "cartridgeType: " + cartridgeTypeStrings[gbCPU.cartridge.cartridgeType] + "\n" +
-                                        "ROM Size: " + gbCPU.cartridge.romSize + "\n" +
-                                        "RAM Size: " + gbCPU.cartridge.ramSize + "\n" +
-                                        "destination code: " + gbCPU.cartridge.destinationCode;
-                // debugger
-                spriteBatch.DrawString(font0, strDebugger, new Vector2(5, graphics.PreferredBackBufferHeight - font0.MeasureString(strDebugger).Y - 5), Color.White);
-
-                //spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
-            }
-
-            spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+        
+        public void LoadRomList(string path)
+        {
+            romList.Clear();
+            romList.AddRange(Directory.GetFiles(path));
+
+            for (int i = 0; i < romList.Count; i++)
+            {
+                if (!romList[i].Contains(".gb"))
+                {
+                    romList.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
+        void LoadRom(string path)
+        {
+            gbCPU.cartridge.ROM = File.ReadAllBytes(path);
+
+            gbCPU.cartridge.Init();
+
+            gbCPU.Start();
+
+            romLoaded = true;
+        }
+
+        void SaveState(string path)
+        {
+            using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write))
+            {
+                using (BinaryWriter writer = new BinaryWriter(fileStream))
+                {
+                    writer.Write(gbCPU.reg_PC);
+                    writer.Write(gbCPU.reg_SP);
+
+                    writer.Write(gbCPU.reg_AF);
+                    writer.Write(gbCPU.reg_BC);
+                    writer.Write(gbCPU.reg_DE);
+                    writer.Write(gbCPU.reg_HL);
+
+                    writer.Write(gbCPU.IME);
+
+                    // cartridge
+                    writer.Write(gbCPU.cartridge.cartridgeType);
+
+                    for (int i = 0x8000; i < gbCPU.generalMemory.memory.Length; i++)
+                    {
+                        writer.Write(gbCPU.generalMemory.memory[i]);
+                    }
+                }
+            }
+        }
+
+        void LoadState()
+        {
+
         }
 
         Color[] clMemory;
@@ -330,68 +393,5 @@ namespace GameBoyMono
 
             sprMemory.SetData(clMemory);
         }
-
-        public void LoadRomList(string path)
-        {
-            romList.Clear();
-            romList.AddRange(Directory.GetFiles(path));
-
-            for (int i = 0; i < romList.Count; i++)
-            {
-                if (!romList[i].Contains(".gb"))
-                {
-                    romList.RemoveAt(i);
-                    i--;
-                }
-            }
-        }
-
-        void LoadRom(string path)
-        {
-            gbCPU.cartridge.ROM = File.ReadAllBytes(path);
-
-            gbCPU.cartridge.Init();
-
-            romLoaded = true;
-        }
-
-        void SaveState(string path)
-        {
-            using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.Write))
-            {
-                using (BinaryWriter writer = new BinaryWriter(fileStream))
-                {
-                    writer.Write(gbCPU.reg_PC);
-                    writer.Write(gbCPU.reg_SP);
-
-                    writer.Write(gbCPU.reg_AF);
-                    writer.Write(gbCPU.reg_BC);
-                    writer.Write(gbCPU.reg_DE);
-                    writer.Write(gbCPU.reg_HL);
-
-                }
-            }
-        }
-
-        void LoadState()
-        {
-
-        }
-
-        //void LoadRamDump(string path)
-        //{
-        //    using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read))
-        //    {
-        //        using (BinaryReader romReader = new BinaryReader(fileStream))
-        //        {
-        //            // load the first junk into the general memory
-        //            int i = 0;
-        //            while (i < romReader.BaseStream.Length)
-        //            {
-        //                gbCPU.generalMemory.memory[i++] = romReader.ReadByte();
-        //            }
-        //        }
-        //    }
-        //}
     }
 }

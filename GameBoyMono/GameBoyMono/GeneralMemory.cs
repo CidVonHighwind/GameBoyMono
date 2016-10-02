@@ -4,7 +4,12 @@ namespace GameBoyMono
 {
     public class GeneralMemory
     {
-        public byte[] memory = new byte[65536]; // 0x10000
+        public byte[] memory;
+
+        public void Init()
+        {
+            memory = new byte[65536];// 0x10000
+        }
 
         public byte this[int index]
         {

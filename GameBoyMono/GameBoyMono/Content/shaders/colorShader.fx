@@ -1,4 +1,4 @@
-﻿#if OPENGL
+﻿#if OPENGL 
 	#define SV_POSITION POSITION
 	#define VS_SHADERMODEL vs_3_0
 	#define PS_SHADERMODEL ps_3_0
@@ -24,14 +24,16 @@ float4 MainPS(float4 pos : SV_POSITION, float4 sColor1 : COLOR0, float2 coords: 
 {
 	float4 spriteColor = tex2D(s0,coords);
 	
-	if(spriteColor.r < 0.25) // 0
-		return color4 * spriteColor.a;
-	if(spriteColor.r < 0.5)	// 0.33
-		return color3 * spriteColor.a;
-	if(spriteColor.r < 0.75) // 0.66
-		return color2 * spriteColor.a;
+	if(spriteColor.a == 0)
+		return float4(0, 0, 0, 0);
+	else if(spriteColor.r < 0.25)	// 0
+		return color4;
+	else if(spriteColor.r < 0.50)	// 0.33
+		return color3;
+	else if(spriteColor.r < 0.75)	// 0.66
+		return color2;
 	else
-		return color1 * spriteColor.a;
+		return color1;
 }
 
 technique SpriteDrawing

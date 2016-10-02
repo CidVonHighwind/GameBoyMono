@@ -45,8 +45,7 @@ namespace GameBoyMono
 
         //  4194304Hz / 59.73fps = 70221
         public int maxCycles = 70224, cycleCount, lastCycleCount;  // 69905 70224
-        int lcdCycleCount;
-        int lcdCycleTime;
+        int lcdCycleCount, lcdCycleTime;
 
         // 44100/60=735 -> 70224/735=95,5..
         float soundCount, maxSoundCycles = 95.54f;
@@ -106,9 +105,14 @@ namespace GameBoyMono
 
         public void Start()
         {
-            reg_PC = 0x00;
+            generalMemory.Init();
 
-            romMounted = true;
+            cycleCount = 0;
+            lastCycleCount = 0;
+            lcdCycleCount = 0;
+            lcdCycleTime = 0;
+
+            CPUHalt = false;
 
             SkipBootROM();
         }
@@ -409,6 +413,8 @@ namespace GameBoyMono
 
         public void SkipBootROM()
         {
+            romMounted = true;
+
             reg_AF = 0x01B0;
             reg_BC = 0x0013;
             reg_DE = 0x00D8;

@@ -11,8 +11,7 @@ namespace GameBoyMono
     {
         public Texture2D sprTileData, sprBackground, sprObjects;
 
-        public Color[] colorData1 = new Color[160 * 144];
-        public Color[] colorData2 = new Color[160 * 144];
+        public Color[] colorData1 = new Color[160 * 144], colorData2 = new Color[160 * 144];
 
         public bool debugMode = false, updateTileset;
 
@@ -26,12 +25,16 @@ namespace GameBoyMono
         public byte bgp, obj0, obj1;
 
         // draw the tiledata
-        int scale = 2;
+        int scale = 2, selectedTile;
+
+        static int tilesX = 16;
+        static int tilesY = 24;
+
+        Color[] tilesetData = new Color[tilesX * tilesY * 8 * 8];
+        byte[] tilesetByteData = new byte[tilesX * tilesY * 8 * 8];
 
         public void Load(ContentManager Content)
         {
-            LoadTexture(ref sprTileData);
-
             LoadTileData("Content/sprites/tileDataAlien");
 
             sprBackground = new Texture2D(Game1.graphics.GraphicsDevice, 160, 144);
@@ -58,6 +61,23 @@ namespace GameBoyMono
 
             if (InputHandler.KeyPressed(Microsoft.Xna.Framework.Input.Keys.T))
                 SaveTileData("textureDump.png");
+
+            if (debugMode)
+            {
+                if (InputHandler.MouseIntersect(new Rectangle(debugBackgroundPos.X, debugBackgroundPos.Y, 256 * scale, 256 * scale)))
+                {
+                    // 0=9800-9BFF, 1=9C00-9FFF
+                    int startAddress = (Game1.gbCPU.generalMemory.memory[0xFF40] & 0x08) == 0x08 ? 0x9C00 : 0x9800;
+
+                    int data = (InputHandler.MousePosition().X - debugBackgroundPos.X) / (scale * 8) +
+                        ((InputHandler.MousePosition().Y - debugBackgroundPos.Y) / (scale * 8)) * 32;
+
+                    selectedTile = (Game1.gbCPU.generalMemory.memory[0xFF40] & 0x10) == 0x10 ?
+                        Game1.gbCPU.generalMemory.memory[startAddress + data] : (sbyte)Game1.gbCPU.generalMemory.memory[startAddress + data] + 256;
+                }
+                else
+                    selectedTile = -1;
+            }
 
             scale = debugMode ? 2 : 1;
         }
@@ -92,6 +112,10 @@ namespace GameBoyMono
 
             if (sprTileData != null)
                 spriteBatch.Draw(sprTileData, new Rectangle(debugTilePos.X, debugTilePos.Y, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
+
+            if (selectedTile != -1)
+                spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugTilePos.X + (selectedTile % 16) * (scale * 8),
+                    debugTilePos.Y + (selectedTile / 16) * (scale * 8), 8 * scale, 8 * scale), Color.Red * 0.5f);
 
             // LCD Display Enable
             if ((Game1.gbCPU.generalMemory.memory[0xFF40] & 0x80) == 0x00)
@@ -135,6 +159,9 @@ namespace GameBoyMono
                         new Rectangle((data % 16) * 8, (data / 16) * 8, 8, 8), Color.White);
             }
 
+            if (InputHandler.MouseIntersect(new Rectangle(debugBackgroundPos.X, debugBackgroundPos.Y, 256 * scale, 256 * scale)))
+                spriteBatch.Draw(Game1.sprWhite, new Rectangle(InputHandler.MousePosition().X - debugBackgroundPos.X, 
+                    InputHandler.MousePosition().Y - debugBackgroundPos.X, scale * 8, scale * 8), Color.Red * 0.5f);
 
             // Window
             spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugWindowPos.X, debugWindowPos.Y, 256 * scale, 256 * scale), Color.White);
@@ -281,12 +308,9 @@ namespace GameBoyMono
                         int posY = (Game1.gbCPU.generalMemory.memory[j] - 16);
                         int posX = (Game1.gbCPU.generalMemory.memory[j + 1] - 8);
 
+                        // not in the current pixel
                         if (posX > i || i >= posX + 8 || posY > scanLine || scanLine >= posY + (objSize ? 16 : 8))
                             continue;
-                        else
-                        {
-
-                        }
 
                         byte tileNumber = Game1.gbCPU.generalMemory.memory[j + 2];
                         byte attributes = Game1.gbCPU.generalMemory.memory[j + 3];
@@ -354,7 +378,10 @@ namespace GameBoyMono
                         //pixel = color;
 
                         if (pixel != Color.Transparent)
+                        {
+                            colorData1[scanLine * 160 + i] = Color.Transparent;
                             colorData2[scanLine * 160 + i] = pixel;
+                        }
                     }
                 }
                 else
@@ -370,9 +397,7 @@ namespace GameBoyMono
                 sprObjects.SetData(colorData2);
             }
         }
-
-        Color[] tilesetData;//, originalTilesetData;
-        byte[] tilesetByteData;
+        
         void LoadTexture(ref Texture2D sprTexture)
         {
             // bank 0 countains 192 tiles and two background maps
@@ -381,8 +406,7 @@ namespace GameBoyMono
             // tile data:   8000-8FFF   Background/Window
             //              8800-97FF
             // they overlap
-            int tilesX = 16;
-            int tilesY = 24;
+
 
             if (sprTexture == null)
                 sprTexture = new Texture2D(Game1.graphics.GraphicsDevice, tilesX * 8, tilesY * 8);
