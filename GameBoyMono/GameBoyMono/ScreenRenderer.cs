@@ -108,10 +108,12 @@ namespace GameBoyMono
             spriteBatch.Draw(sprBackground, new Rectangle(debugFramePos.X, debugFramePos.Y, sprBackground.Width * scale, sprBackground.Height * scale), Color.White);
             spriteBatch.Draw(sprObjects, new Rectangle(debugFramePos.X, debugFramePos.Y, sprBackground.Width * scale, sprBackground.Height * scale), Color.White);
 
-            spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugTilePos.X, debugTilePos.Y, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
 
             if (sprTileData != null)
+            {
+                spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugTilePos.X, debugTilePos.Y, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
                 spriteBatch.Draw(sprTileData, new Rectangle(debugTilePos.X, debugTilePos.Y, sprTileData.Width * scale, sprTileData.Height * scale), Color.White);
+            }
 
             if (selectedTile != -1)
                 spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugTilePos.X + (selectedTile % 16) * (scale * 8),
@@ -160,8 +162,8 @@ namespace GameBoyMono
             }
 
             if (InputHandler.MouseIntersect(new Rectangle(debugBackgroundPos.X, debugBackgroundPos.Y, 256 * scale, 256 * scale)))
-                spriteBatch.Draw(Game1.sprWhite, new Rectangle(InputHandler.MousePosition().X - debugBackgroundPos.X, 
-                    InputHandler.MousePosition().Y - debugBackgroundPos.X, scale * 8, scale * 8), Color.Red * 0.5f);
+                spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugBackgroundPos.X + (InputHandler.MousePosition().X - debugBackgroundPos.X) / (scale * 8) * (scale * 8),
+                    debugBackgroundPos.Y + (InputHandler.MousePosition().Y - debugBackgroundPos.Y) / (scale * 8) * (scale * 8), scale * 8, scale * 8), Color.Red * 0.5f);
 
             // Window
             spriteBatch.Draw(Game1.sprWhite, new Rectangle(debugWindowPos.X, debugWindowPos.Y, 256 * scale, 256 * scale), Color.White);
@@ -335,16 +337,9 @@ namespace GameBoyMono
                         if ((scanLine - posY >= 8 && !flipY) || (scanLine - posY < 8 && flipY && objSize))
                             tileNumber++;
 
-                        int spriteX = i - posX;
-                        int spriteY = (scanLine - posY) % 8;
-
-                        // X flip
-                        if (flipX)
-                            spriteX = 7 - spriteX;
-                        // Y flip
-                        if (flipY)
-                            spriteY = 7 - spriteY;
-
+                        int spriteX = flipX ? (7 - (i - posX)) : (i - posX);
+                        int spriteY = flipY ? (7 - ((scanLine - posY) % 8)) : ((scanLine - posY) % 8);
+                        
                         byte b = tilesetByteData[(tileNumber % 16) * 8 + (tileNumber / 16) * (16 * 8 * 8) + spriteY * (16 * 8) + spriteX];
 
                         int colorNumber = (Game1.gbCPU.generalMemory[0xFF48 + (palette ? 1 : 0)] >> ((b * 2))) & 0x03;
@@ -361,19 +356,17 @@ namespace GameBoyMono
 
                         Color pixel = tilesetData[(tileNumber % 16) * 8 + (tileNumber / 16) * (16 * 8 * 8) + spriteY * (16 * 8) + spriteX];
 
-                        if (obj1 != Game1.gbCPU.generalMemory.memory[0xFF49])
-                        {
-                            int dumpColor = (obj1 >> ((b * 2))) & 0x03;
+                        //// dumped tile color difference
+                        //if (obj1 != Game1.gbCPU.generalMemory.memory[0xFF49])
+                        //{
+                        //    int dumpColor = (obj1 >> ((b * 2))) & 0x03;
+                            
+                        //    int change = dumpColor - colorNumber;
+                        //    int addChange = (int)((change / 3d) * 255);
 
-                            //colorNumber = 3 - colorNumber;
-                            //dumpColor = 3 - dumpColor;
-
-                            int change = dumpColor - colorNumber;
-                            int addChange = (int)((change / 3d) * 255);
-
-                            pixel = new Color(MathHelper.Clamp(pixel.R + addChange, 0, 255),
-                                MathHelper.Clamp(pixel.G + addChange, 0, 255), MathHelper.Clamp(pixel.B + addChange, 0, 255), pixel.A);
-                        }
+                        //    pixel = new Color(MathHelper.Clamp(pixel.R + addChange, 0, 255),
+                        //        MathHelper.Clamp(pixel.G + addChange, 0, 255), MathHelper.Clamp(pixel.B + addChange, 0, 255), pixel.A);
+                        //}
 
                         //pixel = color;
 

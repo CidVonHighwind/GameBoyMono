@@ -16,7 +16,7 @@ namespace GameBoyMono
         public static SpriteBatch spriteBatch;
 
         public static Texture2D sprWhite, sprMemory, sprBackground;
-        SpriteFont font0;
+        public static SpriteFont font0;
         Effect gbShader, gbColorShader;
 
         public static GameBoyCPU gbCPU = new GameBoyCPU();
@@ -33,7 +33,7 @@ namespace GameBoyMono
         public static string[] parameter;
 
         float renderScale;
-        bool debugMode = false;
+        bool debugMode = true;
 
         public List<string> romList = new List<string>();
 
@@ -44,6 +44,8 @@ namespace GameBoyMono
         int buttonHeight = 30;
 
         Vector4[] bgColors = new Vector4[4], objColors = new Vector4[4];
+
+        TetrisPlayer tetrisPlayer = new TetrisPlayer();
 
         string[] cartridgeTypeStrings = new string[] {
             "ROM ONLY", "MBC1", "MBC1+RAM", "MBC1+RAM+BATTERY", "ERROR", "MBC2", "MBC2+B", "ERROR", "ROM+RAM", "ROM+RAM+BATTERY",
@@ -161,10 +163,26 @@ namespace GameBoyMono
             }
             else
             {
+                gbCPU.keyStateLeft = InputHandler.KeyDown(Keys.Left);
+                gbCPU.keyStateRight = InputHandler.KeyDown(Keys.Right);
+                gbCPU.keyStateUp = InputHandler.KeyDown(Keys.Up);
+                gbCPU.keyStateDown = InputHandler.KeyDown(Keys.Down);
+
+                gbCPU.keyStateA = InputHandler.KeyDown(Keys.A);
+                gbCPU.keyStateB = InputHandler.KeyDown(Keys.S);
+                gbCPU.keyStateSelect = InputHandler.KeyDown(Keys.Back);
+                gbCPU.keyStateStart = InputHandler.KeyDown(Keys.Enter);
+                
+                // update the tetris player
+                tetrisPlayer.Update();
+
                 // update the cpu
                 gbCPU.Update(gameTime);
                 // update the renderer
                 gbRenderer.Update();
+
+                if (InputHandler.KeyPressed(Keys.T))
+                    tetrisPlayer.isRunning = !tetrisPlayer.isRunning;
 
                 if (debugMode)
                     UpdateSprMemory();
@@ -185,6 +203,7 @@ namespace GameBoyMono
 
             if (romLoaded)
             {
+                // debug mode
                 if (debugMode)
                 {
                     spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);
@@ -207,6 +226,8 @@ namespace GameBoyMono
                     spriteBatch.DrawString(font0, strDebugger, new Vector2(5, graphics.PreferredBackBufferHeight - font0.MeasureString(strDebugger).Y - 5), Color.White);
 
                     //spriteBatch.Draw(sprMemory, new Vector2(300, 0), Color.White);
+
+                    tetrisPlayer.Draw(spriteBatch);
 
                     spriteBatch.End();
                 }
@@ -268,6 +289,7 @@ namespace GameBoyMono
                     spriteBatch.End();
                 }
             }
+            // Menü
             else
             {
                 spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp, null, null);

@@ -48,15 +48,15 @@ namespace GameBoyMono
                     if ((memory[0xFF00] & 0x10) == 0x00)
                     {
                         memory[0xFF00] |= (byte)(
-                            (InputHandler.KeyDown(Keys.Right) ? 0x00 : 0x01) | (InputHandler.KeyDown(Keys.Left) ? 0x00 : 0x02) |
-                            (InputHandler.KeyDown(Keys.Up) ? 0x00 : 0x04) | (InputHandler.KeyDown(Keys.Down) ? 0x00 : 0x08));
+                            (Game1.gbCPU.keyStateRight ? 0x00 : 0x01) | (Game1.gbCPU.keyStateLeft ? 0x00 : 0x02) |
+                            (Game1.gbCPU.keyStateUp ? 0x00 : 0x04) | (Game1.gbCPU.keyStateDown ? 0x00 : 0x08));
                     }
                     // a, b, select, start
                     if ((memory[0xFF00] & 0x20) == 0x00)
                     {
                         memory[0xFF00] |= (byte)(
-                            (InputHandler.KeyDown(Keys.A) ? 0x00 : 0x01) | (InputHandler.KeyDown(Keys.S) ? 0x00 : 0x02) |
-                            (InputHandler.KeyDown(Keys.Back) ? 0x00 : 0x04) | (InputHandler.KeyDown(Keys.Enter) ? 0x00 : 0x08));
+                            (Game1.gbCPU.keyStateA ? 0x00 : 0x01) | (Game1.gbCPU.keyStateB ? 0x00 : 0x02) |
+                            (Game1.gbCPU.keyStateSelect ? 0x00 : 0x04) | (Game1.gbCPU.keyStateStart ? 0x00 : 0x08));
                     }
                 }
 

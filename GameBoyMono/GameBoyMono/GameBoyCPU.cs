@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using System;
 
 namespace GameBoyMono
@@ -53,6 +54,8 @@ namespace GameBoyMono
         public bool romMounted, renderScreen;
 
         public bool soundPlaying;
+
+        public bool keyStateLeft, keyStateRight, keyStateUp, keyStateDown, keyStateSelect, keyStateStart, keyStateA, keyStateB;
 
         int divCounter, timerCounter;
 
@@ -123,14 +126,7 @@ namespace GameBoyMono
                 CPUCycle();
 
             cycleCount -= maxCycles;
-
-            // render Screen
-            //if (renderScreen)
-            //{
-            //    renderScreen = false;
-            //    Game1.gbRenderer.Draw();
-            //}
-
+            
             Game1.gbSound.AddCurrentBuffer();
 
             if (!soundPlaying)

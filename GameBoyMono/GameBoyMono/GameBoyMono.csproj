@@ -67,6 +67,7 @@
     <Compile Include="ScreenRenderer.cs" />
     <Compile Include="SearchTree.cs" />
     <Compile Include="Sound.cs" />
+    <Compile Include="TetrisPlayer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MonoGame.Framework">
